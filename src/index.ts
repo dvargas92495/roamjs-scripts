@@ -34,7 +34,7 @@ const build = (): Promise<number> => {
           extensions: [".ts", ".js", ".tsx"],
         },
         output: {
-          path: path.join(__dirname, "build"),
+          path: "build",
           filename: "[name].js",
         },
         module: {
