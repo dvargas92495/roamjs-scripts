@@ -4,7 +4,6 @@ import fs from "fs";
 import path from "path";
 import repoName from "git-repo-name";
 import Dotenv from "dotenv-webpack";
-import MiniCssExtractPlugin from "mini-css-extract-plugin";
 
 const build = (): Promise<number> => {
   return new Promise((resolve, reject) => {
@@ -117,7 +116,6 @@ const build = (): Promise<number> => {
           ],
         },
         plugins: [
-          new MiniCssExtractPlugin(),
           new Dotenv({
             path: ".env.local",
             systemvars: true,
@@ -137,9 +135,9 @@ const build = (): Promise<number> => {
         } else {
           console.log(
             "Successfully compiled from",
-            new Date(stats.startTime).toLocaleTimeString(),
+            new Date(stats.startTime || 0).toLocaleTimeString(),
             "to",
-            new Date(stats.endTime).toLocaleTimeString()
+            new Date(stats.endTime || 0).toLocaleTimeString()
           );
           resolve(0);
         }
