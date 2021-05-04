@@ -24,7 +24,7 @@ const build = (): Promise<number> => {
       return;
     }
     console.log("Using entry file", entryFile);
-    console.log("Using output", path.resolve('build'));
+    console.log("Using output", path.resolve("build"));
     webpack(
       {
         entry: {
