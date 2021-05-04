@@ -1,5 +1,8 @@
 import run from "../src";
 
-test("Runs Default", () => {
-  expect(run()).toBe(0);
+test("Runs Build", (done) => {
+  run('build').then((code) => {
+    expect(code).toBe(0);
+    done();
+  })
 });
