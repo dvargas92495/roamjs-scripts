@@ -9,10 +9,13 @@ import MiniCssExtractPlugin from "mini-css-extract-plugin";
 const build = (): Promise<number> => {
   return new Promise((resolve, reject) => {
     const srcFiles = fs.readdirSync("./src/");
+    console.log('Found', srcFiles, 'in src');
     const packageJson = path.join(__dirname, "package.json");
+    console.log('Found package json', packageJson);
     const name = fs.existsSync(packageJson)
       ? JSON.parse(fs.readFileSync(packageJson).toString())?.name
       : repoName.sync();
+    console.log('Decided on extension name', name);
     const entryFile =
       srcFiles.find((s) => /index\.(t|j)s/.test(s)) ||
       srcFiles.find((s) => new RegExp(`${name}\\.(t|j)s`).test(s));
@@ -23,6 +26,7 @@ const build = (): Promise<number> => {
       reject(1);
       return;
     }
+    console.log('Using entry file', entryFile);
     webpack(
       {
         entry: {
