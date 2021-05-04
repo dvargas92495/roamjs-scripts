@@ -41,7 +41,7 @@
   "dependencies": {
     "babel-loader": "^8.2.2",
     "css-loader": "^5.2.4",
-    "dotenv-webpack": "^7.0.2",
+    "dotenv-webpack": "^2.0.0",
     "file-loader": "^6.2.0",
     "git-repo-name": "^1.0.1",
     "mini-css-extract-plugin": "^1.6.0",
@@ -50,6 +50,6 @@
     "svg-react-loader": "^0.4.6",
     "ts-loader": "^9.1.1",
     "url-loader": "^4.1.1",
-    "webpack": "^5.36.2"
+    "webpack": "^4.44.1"
   }
 }
