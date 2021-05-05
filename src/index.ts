@@ -25,7 +25,7 @@ const build = (): Promise<number> => {
     }
     console.log("Using entry file", entryFile);
     console.log("Using output", path.resolve("build"));
-    const env = dotenv.parse(fs.readFileSync(".env.local"));
+    const env = fs.existsSync('.env.local') ? dotenv.parse(fs.readFileSync(".env.local")) : {};
     webpack(
       {
         entry: {
