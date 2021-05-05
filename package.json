@@ -39,15 +39,19 @@
     "typescript": "^4.2.4"
   },
   "dependencies": {
+    "@babel/core": "^7.14.0",
+    "@babel/preset-env": "^7.14.1",
+    "@babel/preset-react": "^7.13.13",
     "babel-loader": "^8.2.2",
     "css-loader": "^5.2.4",
-    "dotenv-webpack": "^2.0.0",
+    "dotenv": "^8.4.0",
     "file-loader": "^6.2.0",
     "git-repo-name": "^1.0.1",
     "nearley-loader": "^2.0.0",
+    "shebang-loader": "0.0.1",
     "style-loader": "^2.0.0",
     "svg-react-loader": "^0.4.6",
-    "ts-loader": "^9.1.1",
+    "ts-loader": "^8.2.0",
     "url-loader": "^4.1.1",
     "webpack": "^4.44.1"
   }

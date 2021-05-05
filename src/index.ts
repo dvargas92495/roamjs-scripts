@@ -3,7 +3,7 @@ import webpack from "webpack";
 import fs from "fs";
 import path from "path";
 import repoName from "git-repo-name";
-import Dotenv from "dotenv-webpack";
+import dotenv from "dotenv";
 
 const build = (): Promise<number> => {
   return new Promise((resolve, reject) => {
@@ -25,11 +25,13 @@ const build = (): Promise<number> => {
     }
     console.log("Using entry file", entryFile);
     console.log("Using output", path.resolve("build"));
+    const env = dotenv.parse(fs.readFileSync(".env.local"));
     webpack(
       {
         entry: {
           [name]: `./src/${entryFile}`,
         },
+        target: process.env.NODE_ENV === "test" ? "node" : "web",
         resolve: {
           modules: ["node_modules"],
           extensions: [".ts", ".js", ".tsx"],
@@ -43,6 +45,9 @@ const build = (): Promise<number> => {
             {
               test: /\.tsx?$/,
               use: [
+                {
+                  loader: "shebang-loader",
+                },
                 {
                   loader: "babel-loader",
                   options: {
@@ -101,14 +106,7 @@ const build = (): Promise<number> => {
             },
             {
               test: /\.(png|woff|woff2|eot|ttf)$/,
-              use: [
-                {
-                  loader: "url-loader",
-                  options: {
-                    limit: 100000,
-                  },
-                },
-              ],
+              loader: "url-loader?limit=100000",
             },
             {
               test: /\.ne$/,
@@ -117,11 +115,11 @@ const build = (): Promise<number> => {
           ],
         },
         plugins: [
-          new Dotenv({
-            path: ".env.local",
-            systemvars: true,
-            silent: true,
-          }),
+          new webpack.DefinePlugin(
+            Object.fromEntries(
+              Object.keys(env).map((k) => [`process.env.${k}`, env[k]])
+            )
+          ),
         ],
         mode: "production",
         performance: {
@@ -140,7 +138,16 @@ const build = (): Promise<number> => {
             "to",
             new Date(stats.endTime || 0).toLocaleTimeString()
           );
-          resolve(0);
+          if (stats.hasErrors()) {
+            reject(
+              stats.toString({
+                chunks: false,
+                colors: true,
+              })
+            );
+          } else {
+            resolve(0);
+          }
         }
       }
     );
