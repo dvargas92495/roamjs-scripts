@@ -17,7 +17,5 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "importHelpers": true
-  },
-  "include": ["./src/"],
-  "exclude": ["./node_modules/"]
+  }
 }
