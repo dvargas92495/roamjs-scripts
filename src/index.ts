@@ -128,7 +128,7 @@ const getBaseConfig = (): Promise<
           Object.keys(env).map((k) => [`process.env.${k}`, env[k]])
         )
       ),
-    ]
+    ],
   });
 };
 
