@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 import webpack from "webpack";
 import webpackDevServer from "webpack-dev-server";
+import 'webpack-dev-server/client';
 import fs from "fs";
 import path from "path";
 import repoName from "git-repo-name";
 import dotenv from "dotenv";
+
+const appPath = (p: string) => path.resolve(fs.realpathSync(process.cwd()), p);
 
 const getBaseConfig = (): Promise<
   Required<
@@ -40,7 +43,7 @@ const getBaseConfig = (): Promise<
     resolve: {
       modules: [
         "node_modules",
-        path.resolve(fs.realpathSync(process.cwd()), "node_modules"),
+        appPath('node_modules'),
       ],
       extensions: [".ts", ".js", ".tsx"],
     },
@@ -186,7 +189,8 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
           use: ["source-map-loader"],
         });
         baseConfig.plugins.push(new webpack.HotModuleReplacementPlugin());
-        baseConfig.output.publicPath = "http://localhost:8080/";
+        baseConfig.output.publicPath = `http://localhost:${port}/`;
+        baseConfig.output.pathinfo = true;
         const compiler = webpack({
           ...baseConfig,
           mode: "development",
@@ -197,7 +201,7 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
           },
         });
         const server = new webpackDevServer(compiler, {
-          contentBase: "./build",
+          contentBase: appPath("build"),
           host: "127.0.0.1",
           disableHostCheck: true,
           hot: true,
@@ -205,6 +209,7 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
           headers: {
             "Access-Control-Allow-Origin": "https://roamresearch.com",
           },
+          clientLogLevel: 'none',
         });
 
         server.listen(port, "localhost", function (err) {
