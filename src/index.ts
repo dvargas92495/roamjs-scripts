@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import webpack from "webpack";
 import webpackDevServer from "webpack-dev-server";
-import 'webpack-dev-server/client';
+import "webpack-dev-server/client";
 import fs from "fs";
 import path from "path";
 import repoName from "git-repo-name";
@@ -41,10 +41,7 @@ const getBaseConfig = (): Promise<
     },
     target: "web",
     resolve: {
-      modules: [
-        "node_modules",
-        appPath('node_modules'),
-      ],
+      modules: ["node_modules", appPath("node_modules")],
       extensions: [".ts", ".js", ".tsx"],
     },
     output: {
@@ -209,7 +206,7 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
           headers: {
             "Access-Control-Allow-Origin": "https://roamresearch.com",
           },
-          clientLogLevel: 'none',
+          clientLogLevel: "none",
         });
 
         server.listen(port, "localhost", function (err) {
