@@ -15,11 +15,11 @@ const getBaseConfig = (): Promise<
   >
 > => {
   const srcFiles = fs.readdirSync("./src/");
-  console.log("Found", srcFiles, "in src");
+
   const name = fs.existsSync("package.json")
     ? JSON.parse(fs.readFileSync("package.json").toString())?.name
     : repoName.sync({ cwd: path.resolve(".") });
-  console.log("Decided on extension name", name);
+
   const entryFile =
     srcFiles.find((s) => /index\.(t|j)s/.test(s)) ||
     srcFiles.find((s) => new RegExp(`${name}\\.(t|j)s`).test(s));
@@ -28,8 +28,7 @@ const getBaseConfig = (): Promise<
       `Need an entry file in the \`src\` directory named index or ${name}`
     );
   }
-  console.log("Using entry file", entryFile);
-  console.log("Using output", path.resolve("build"));
+
   const env = fs.existsSync(".env.local")
     ? dotenv.parse(fs.readFileSync(".env.local"))
     : {};
@@ -37,9 +36,12 @@ const getBaseConfig = (): Promise<
     entry: {
       main: `./src/${entryFile}`,
     },
-    target: process.env.NODE_ENV === "test" ? "node" : "web",
+    target: "web",
     resolve: {
-      modules: ["node_modules"],
+      modules: [
+        "node_modules",
+        path.resolve(fs.realpathSync(process.cwd()), "node_modules"),
+      ],
       extensions: [".ts", ".js", ".tsx"],
     },
     output: {
@@ -126,7 +128,7 @@ const getBaseConfig = (): Promise<
           Object.keys(env).map((k) => [`process.env.${k}`, env[k]])
         )
       ),
-    ],
+    ]
   });
 };
 
