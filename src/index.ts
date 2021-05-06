@@ -61,7 +61,7 @@ const getBaseConfig = (): Promise<
               options: {
                 cacheDirectory: true,
                 cacheCompression: false,
-                presets: ["@babel/preset-react"],
+                presets: ["@babel/preset-env", "@babel/preset-react"],
               },
             },
             {
@@ -175,8 +175,8 @@ const build = (): Promise<number> => {
   });
 };
 
-const dev = async (): Promise<number> => {
-  const port = 8080;
+const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
+  const port = Number(inputPort) || 8000;
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
@@ -220,12 +220,17 @@ const dev = async (): Promise<number> => {
   });
 };
 
-const run = async (command: string): Promise<number> => {
+const run = async (command: string, args: string[]): Promise<number> => {
+  const opts = Object.fromEntries(
+    args
+      .map((a, i) => [a.replace(/^--/, ""), args[i + 1]])
+      .filter((_, i) => i % 2 == 0)
+  );
   switch (command) {
     case "build":
       return build();
     case "dev":
-      return dev();
+      return dev(opts);
     default:
       console.error("Command", command, "is unsupported");
       return 1;
@@ -233,7 +238,7 @@ const run = async (command: string): Promise<number> => {
 };
 
 if (process.env.NODE_ENV !== "test") {
-  run(process.argv[2])
+  run(process.argv[2], process.argv.slice(3))
     .then((code) => code >= 0 && process.exit(code))
     .catch((err) => {
       console.error(err);
