@@ -61,6 +61,7 @@ const getBaseConfig = (): Promise<
               options: {
                 cacheDirectory: true,
                 cacheCompression: false,
+                presets: ["@babel/preset-react"],
               },
             },
             {
