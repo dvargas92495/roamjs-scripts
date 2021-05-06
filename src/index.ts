@@ -31,7 +31,7 @@ const build = (): Promise<number> => {
     webpack(
       {
         entry: {
-          [name]: `./src/${entryFile}`,
+          main: `./src/${entryFile}`,
         },
         target: process.env.NODE_ENV === "test" ? "node" : "web",
         resolve: {
@@ -40,7 +40,7 @@ const build = (): Promise<number> => {
         },
         output: {
           path: path.resolve("build"),
-          filename: "[name].js",
+          filename: "main.js",
         },
         module: {
           rules: [
