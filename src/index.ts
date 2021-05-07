@@ -204,7 +204,7 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
             "Access-Control-Allow-Origin": "https://roamresearch.com",
           },
           clientLogLevel: "none",
-          injectClient: false
+          injectClient: false,
         });
 
         server.listen(port, "localhost", function (err) {
