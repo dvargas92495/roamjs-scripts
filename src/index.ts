@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import webpack from "webpack";
 import webpackDevServer from "webpack-dev-server";
-import "webpack-dev-server/client";
 import fs from "fs";
 import path from "path";
 import repoName from "git-repo-name";
@@ -207,6 +206,7 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
             "Access-Control-Allow-Origin": "https://roamresearch.com",
           },
           clientLogLevel: "none",
+          injectClient: true,
         });
 
         server.listen(port, "localhost", function (err) {
