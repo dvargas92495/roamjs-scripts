@@ -203,6 +203,8 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
           },
           clientLogLevel: "none",
           injectClient: false,
+          hot: false,
+          inline: false,
         });
 
         server.listen(port, "localhost", function (err) {
