@@ -175,7 +175,6 @@ const build = (): Promise<number> => {
 };
 
 const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
-  require("webpack-dev-server/client");
   const port = Number(inputPort) || 8000;
   return new Promise((resolve, reject) => {
     getBaseConfig()
@@ -185,7 +184,6 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
           enforce: "pre",
           use: ["source-map-loader"],
         });
-        baseConfig.plugins.push(new webpack.HotModuleReplacementPlugin());
         baseConfig.output.publicPath = `http://localhost:${port}/`;
         baseConfig.output.pathinfo = true;
         const compiler = webpack({
@@ -201,13 +199,11 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
           contentBase: appPath("build"),
           host: "127.0.0.1",
           disableHostCheck: true,
-          hot: true,
           publicPath: `http://localhost:${port}/`,
           headers: {
             "Access-Control-Allow-Origin": "https://roamresearch.com",
           },
           clientLogLevel: "none",
-          injectClient: true,
         });
 
         server.listen(port, "localhost", function (err) {
