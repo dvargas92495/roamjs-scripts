@@ -175,7 +175,7 @@ const build = (): Promise<number> => {
 };
 
 const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
-  require('webpack-dev-server/client');
+  require("webpack-dev-server/client");
   const port = Number(inputPort) || 8000;
   return new Promise((resolve, reject) => {
     getBaseConfig()
