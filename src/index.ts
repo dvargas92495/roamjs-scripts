@@ -177,16 +177,11 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
-        baseConfig.entry = [
-          require.resolve("react-dev-utils/webpackHotDevClient"),
-          baseConfig.entry as string,
-        ];
         baseConfig.module.rules.push({
           test: /\.js$/,
           enforce: "pre",
           use: ["source-map-loader"],
         });
-        baseConfig.plugins.push(new webpack.HotModuleReplacementPlugin());
         baseConfig.output.publicPath = `http://localhost:${port}/`;
         baseConfig.output.pathinfo = true;
         const compiler = webpack({
@@ -201,8 +196,6 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
         const server = new webpackDevServer(compiler, {
           contentBase: appPath("build"),
           host: "127.0.0.1",
-          hot: true,
-          transportMode: "ws",
           disableHostCheck: true,
           publicPath: `http://localhost:${port}/`,
           headers: {
