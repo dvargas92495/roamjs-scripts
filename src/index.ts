@@ -313,7 +313,7 @@ ${projectDescription}
           recursive: true,
         });
         return fs.writeFileSync(
-          path.join(root, "tsconfig.json"),
+          path.join(root, "main.yaml"),
           `name: Publish Extension
 on:
   push:
@@ -389,6 +389,7 @@ build
             "@types/react",
             "@types/react-dom",
             "roamjs-scripts",
+            "typescript",
           ];
           const child = spawn(
             "npm",
@@ -397,6 +398,32 @@ build
               stdio: "inherit",
             }
           );
+          child.on("close", (code) => {
+            if (code !== 0) {
+              reject(code);
+              return;
+            }
+            resolve();
+          });
+        });
+      },
+    },
+    {
+      title: "Install Packages",
+      task: () => {
+        process.chdir(root);
+        return new Promise<void>((resolve, reject) => {
+          const dependencies = [
+            "@blueprintjs/core",
+            "@blueprintjs/select",
+            "react",
+            "react-dom",
+            "roam-client",
+            "roamjs-components",
+          ];
+          const child = spawn("npm", ["install"].concat(dependencies), {
+            stdio: "inherit",
+          });
           child.on("close", (code) => {
             if (code !== 0) {
               reject(code);
