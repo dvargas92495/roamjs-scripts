@@ -272,9 +272,11 @@ const init = async ({
           license: "MIT",
         };
 
-        return fs.writeFileSync(
-          path.join(root, "package.json"),
-          JSON.stringify(packageJson, null, 2) + os.EOL
+        return Promise.resolve(
+          fs.writeFileSync(
+            path.join(root, "package.json"),
+            JSON.stringify(packageJson, null, 2) + os.EOL
+          )
         );
       },
     },
@@ -516,8 +518,8 @@ build
       console.log("Skipped", task.title);
       continue;
     }
-    const result = await task
-      .task()
+    const result = await Promise.resolve(task.task)
+      .then((t) => t())
       .then(() => ({ success: true as const }))
       .catch((e) => ({ success: false as const, message: e.message }));
     if (!result.success) {
