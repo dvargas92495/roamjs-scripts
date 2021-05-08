@@ -5,6 +5,11 @@ import fs from "fs";
 import path from "path";
 import repoName from "git-repo-name";
 import dotenv from "dotenv";
+import axios from "axios";
+import getName from "git-user-name";
+import os from "os";
+import spawn, { sync } from "cross-spawn";
+import sodium from "tweetsodium";
 
 const appPath = (p: string) => path.resolve(fs.realpathSync(process.cwd()), p);
 
@@ -220,6 +225,309 @@ const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
   });
 };
 
+const EXTENSION_NAME_REGEX = /^[a-z][a-z0-9-]*$/;
+const init = async ({
+  name,
+  description,
+  user,
+}: {
+  name?: string;
+  description?: string;
+  user?: string;
+}): Promise<number> => {
+  if (!name) {
+    return Promise.reject("--name parameter is required");
+  }
+  if (!EXTENSION_NAME_REGEX.test(name)) {
+    return Promise.reject(
+      "Extension name must consist of only lowercase letters, numbers, and dashes"
+    );
+  }
+
+  const githubOpts = {
+    headers: {
+      Authorization: `token ${process.env.GITHUB_TOKEN}`,
+    },
+  };
+  const root = path.resolve(name);
+  const projectName = name.replace(/^roamjs-/, "");
+  const projectDescription = description || `Description for ${projectName}.`;
+  const tasks = [
+    {
+      title: "Make Project Directory",
+      task: () => fs.mkdirSync(name),
+    },
+    {
+      title: "Write Package JSON",
+      task: () => {
+        const packageJson = {
+          name: projectName,
+          version: "1.0.0",
+          description: projectDescription,
+          main: "./build/main.js",
+          scripts: {
+            build: "roamjs-scripts build",
+            dev: "roamjs-scripts dev",
+          },
+          license: "MIT",
+        };
+
+        return fs.writeFileSync(
+          path.join(root, "package.json"),
+          JSON.stringify(packageJson, null, 2) + os.EOL
+        );
+      },
+    },
+    {
+      title: "Write README.md",
+      task: () =>
+        fs.writeFileSync(
+          path.join(root, "README.md"),
+          `# ${projectName}
+      
+${projectDescription}
+      `
+        ),
+    },
+    {
+      title: "Write tsconfig.json",
+      task: () => {
+        const tsconfig = {
+          extends: "./node_modules/roamjs-scripts/dist/default.tsconfig",
+          include: ["src"],
+          exclude: ["node_modules"],
+        };
+
+        return fs.writeFileSync(
+          path.join(root, "tsconfig.json"),
+          JSON.stringify(tsconfig, null, 2) + os.EOL
+        );
+      },
+    },
+    {
+      title: "Write main.yaml",
+      task: () => {
+        fs.mkdirSync(path.join(root, ".github", "workflows"), {
+          recursive: true,
+        });
+        return fs.writeFileSync(
+          path.join(root, "tsconfig.json"),
+          `name: Publish Extension
+on:
+  push:
+    branches: main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: npm install
+      - name: build
+        run: npm run build 
+      - name: RoamJS Publish
+        uses: dvargas92495/roamjs-publish@0.2.0
+        with:
+          token: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
+          source: build
+          path: ${projectName}
+          release_token: \${{ secrets.ROAMJS_RELEASE_TOKEN }}
+`
+        );
+      },
+    },
+    {
+      title: "Write .gitignore",
+      task: () => {
+        return fs.writeFileSync(
+          path.join(root, ".gitignore"),
+          `node_modules
+build
+`
+        );
+      },
+    },
+    {
+      title: "Write LICENSE",
+      task: () => {
+        return fs.writeFileSync(
+          path.join(root, "LICENSE"),
+          `MIT License
+  
+  Copyright (c) ${new Date().getFullYear()} ${getName()}
+  
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+  `
+        );
+      },
+    },
+    {
+      title: "Install Dev Packages",
+      task: () => {
+        process.chdir(root);
+        return new Promise<void>((resolve, reject) => {
+          const dependencies = [
+            "@types/react",
+            "@types/react-dom",
+            "roamjs-scripts",
+          ];
+          const child = spawn(
+            "npm",
+            ["install", "--save-dev"].concat(dependencies),
+            {
+              stdio: "inherit",
+            }
+          );
+          child.on("close", (code) => {
+            if (code !== 0) {
+              reject(code);
+              return;
+            }
+            resolve();
+          });
+        });
+      },
+    },
+    {
+      title: "Write src",
+      task: () => {
+        fs.mkdirSync(path.join(root, "src"));
+        return fs.writeFileSync(
+          path.join(root, "src", "index.ts"),
+          `const CONFIG = \`roam/js/${projectName}\`;`
+        );
+      },
+    },
+    {
+      title: "Create a github repo",
+      task: () => {
+        return axios
+          .post("https://api.github.com/user/repos", { name }, githubOpts)
+          .catch((e) => console.log("Failed to create repo", e.response?.data));
+      },
+      skip: () => !user || !process.env.GITHUB_TOKEN,
+    },
+    {
+      title: "Add Developer Tokens",
+      task: () => {
+        // https://docs.github.com/en/free-pro-team@latest/rest/reference/actions#example-encrypting-a-secret-using-nodejs
+        const addSecret = (secretName: string) => {
+          const secretValue = process.env[secretName];
+          if (!secretValue) {
+            console.log("No local developer token set, skip");
+            return;
+          }
+          const messageBytes = Buffer.from(secretValue);
+          return axios
+            .get(
+              `https://api.github.com/repos/${user}/${name}/actions/secrets/public-key`,
+              githubOpts
+            )
+            .then(({ data: { key } }) => {
+              const keyBytes = Buffer.from(key, "base64");
+              const encryptedBytes = sodium.seal(messageBytes, keyBytes);
+              const encrypted_value = Buffer.from(encryptedBytes).toString(
+                "base64"
+              );
+              return axios.put(
+                `https://api.github.com/repos/${user}/${name}/actions/secrets/${secretName}`,
+                {
+                  encrypted_value,
+                  key_id: key,
+                },
+                githubOpts
+              );
+            });
+        };
+        process.env.ROAMJS_RELEASE_TOKEN = process.env.GITHUB_TOKEN;
+        return Promise.all([
+          addSecret("ROAMJS_DEVELOPER_TOKEN"),
+          addSecret("ROAMJS_RELEASE_TOKEN"),
+        ]).catch((e) => console.log("Failed to add secret", e.response?.data));
+      },
+      skip: () => !user || !process.env.GITHUB_TOKEN,
+    },
+    {
+      title: "Git init",
+      task: () => {
+        process.chdir(root);
+        return sync("git init", { stdio: "ignore" });
+      },
+    },
+    {
+      title: "Git add",
+      task: () => {
+        process.chdir(root);
+        return sync("git add -A", { stdio: "ignore" });
+      },
+    },
+    {
+      title: "Git commit",
+      task: () => {
+        process.chdir(root);
+        return sync(
+          `git commit -m "Initial commit for RoamJS extension ${projectName}"`,
+          {
+            stdio: "ignore",
+          }
+        );
+      },
+    },
+    {
+      title: "Git remote",
+      task: () => {
+        process.chdir(root);
+        return sync(
+          `git remote add origin "https:\\/\\/github.com\\/${user}\\/${name}.git"`,
+          { stdio: "ignore" }
+        );
+      },
+      skip: () => !user,
+    },
+    {
+      title: "Git push",
+      task: () => {
+        process.chdir(root);
+        return sync(`git push origin main`, { stdio: "ignore" });
+      },
+      skip: () => !user,
+    },
+  ] as { title: string; task: () => Promise<void>; skip?: () => boolean }[];
+  for (const task of tasks) {
+    console.log("Running", task.title, "...");
+    if (task.skip?.()) {
+      console.log("Skipped", task.title);
+      continue;
+    }
+    const result = await task
+      .task()
+      .then(() => ({ success: true as const }))
+      .catch((e) => ({ success: false as const, message: e.message }));
+    if (!result.success) {
+      return Promise.reject(result.message);
+    }
+  }
+  console.log(`Package ${name} is ready!`);
+  return Promise.resolve(0);
+};
+
 const run = async (command: string, args: string[]): Promise<number> => {
   const opts = Object.fromEntries(
     args
@@ -231,6 +539,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return build();
     case "dev":
       return dev(opts);
+    case "init":
+      return init(opts);
     default:
       console.error("Command", command, "is unsupported");
       return 1;
