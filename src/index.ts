@@ -635,8 +635,8 @@ const lambdas = async (): Promise<number> => {
   }).then((code) => {
     const zip = new JSZip();
     return Promise.all(
-      fs.readdirSync(appPath('out')).map((f) => {
-        const content = fs.readFileSync(path.join(appPath('out'), f));
+      fs.readdirSync(appPath("out")).map((f) => {
+        const content = fs.readFileSync(path.join(appPath("out"), f));
         zip.file(f, content);
         /*zip
         .generateNodeStream({ type: "nodebuffer", streamFiles: true })
@@ -660,8 +660,14 @@ const lambdas = async (): Promise<number> => {
 const run = async (command: string, args: string[]): Promise<number> => {
   const opts = Object.fromEntries(
     args
-      .map((a, i) => [a, args[i + 1] && !args[i+1].startsWith('--') ? args[i+1] : true] as const)
-      .filter(([k]) => k.startsWith('--'))
+      .map(
+        (a, i) =>
+          [
+            a,
+            args[i + 1] && !args[i + 1].startsWith("--") ? args[i + 1] : true,
+          ] as const
+      )
+      .filter(([k]) => k.startsWith("--"))
       .map(([k, v]) => [k.replace(/^--/, ""), v])
   );
   switch (command) {
