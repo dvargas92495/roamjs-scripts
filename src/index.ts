@@ -618,7 +618,7 @@ const lambdas = async (): Promise<number> => {
         },
         output: {
           libraryTarget: "commonjs2",
-          path: path.join(__dirname, "out"),
+          path: path.resolve("out"),
           filename: "[name].js",
         },
         resolve: {
