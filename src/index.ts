@@ -638,19 +638,22 @@ const lambdas = async (): Promise<number> => {
       fs.readdirSync(appPath("out")).map((f) => {
         const content = fs.readFileSync(path.join(appPath("out"), f));
         zip.file(f, content);
-        /*zip
-        .generateNodeStream({ type: "nodebuffer", streamFiles: true })
-        .pipe(fs.createWriteStream(f.replace(/\.js$/, ".zip")))
-        .on('finish', resolve);*/
-        return zip.generateAsync({ type: "blob" }).then((ZipFile) =>
-          lambda
-            .updateFunctionCode({
-              FunctionName: `RoamJS_${f.replace(/\.js$/, "")}`,
-              Publish: true,
-              ZipFile,
-            })
-            .promise()
-            .then(() => console.log(`Succesfully uploaded ${f}`))
+        const data: Uint8Array[] = [];
+        return new Promise<void>((resolve) =>
+          zip
+            .generateNodeStream({ type: "nodebuffer", streamFiles: true })
+            .on("data", (d) => data.push(d))
+            .on("end", () =>
+              lambda
+                .updateFunctionCode({
+                  FunctionName: `RoamJS_${f.replace(/\.js$/, "")}`,
+                  Publish: true,
+                  ZipFile: Buffer.concat(data),
+                })
+                .promise()
+                .then(() => console.log(`Succesfully uploaded ${f}`))
+                .then(resolve)
+            )
         );
       })
     ).then(() => code);
