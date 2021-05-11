@@ -191,7 +191,7 @@ const build = (): Promise<number> => {
   });
 };
 
-const dev = async ({ port: inputPort }: { port: string }): Promise<number> => {
+const dev = async ({ port: inputPort }: { port?: string }): Promise<number> => {
   const port = Number(inputPort) || 8000;
   return new Promise((resolve, reject) => {
     getBaseConfig()
@@ -244,10 +244,12 @@ const init = async ({
   name,
   description,
   user,
+  backend,
 }: {
   name?: string;
   description?: string;
   user?: string;
+  backend?: boolean;
 }): Promise<number> => {
   if (!name) {
     return Promise.reject("--name parameter is required");
@@ -332,6 +334,9 @@ ${projectDescription}
 on:
   push:
     branches: main
+    paths:
+      - "src/*"
+      - ".github/workflows/main.yaml"
 
 jobs:
   deploy:
@@ -468,7 +473,7 @@ build
       skip: () => !user || !process.env.GITHUB_TOKEN,
     },
     {
-      title: "Add Developer Tokens",
+      title: "Add Developer Tokens As Secrets",
       task: () => {
         // https://docs.github.com/en/free-pro-team@latest/rest/reference/actions#example-encrypting-a-secret-using-nodejs
         const addSecret = (secretName: string) => {
@@ -505,7 +510,7 @@ build
           addSecret("ROAMJS_RELEASE_TOKEN"),
         ]).catch((e) => console.log("Failed to add secret", e.response?.data));
       },
-      skip: () => !user || !process.env.GITHUB_TOKEN,
+      skip: () => !user || !process.env.GITHUB_TOKEN || backend,
     },
     {
       title: "Git init",
@@ -630,8 +635,8 @@ const lambdas = async (): Promise<number> => {
   }).then((code) => {
     const zip = new JSZip();
     return Promise.all(
-      fs.readdirSync("./out/").map((f) => {
-        const content = fs.readFileSync(`./out/${f}`);
+      fs.readdirSync(appPath('out')).map((f) => {
+        const content = fs.readFileSync(path.join(appPath('out'), f));
         zip.file(f, content);
         /*zip
         .generateNodeStream({ type: "nodebuffer", streamFiles: true })
@@ -655,8 +660,9 @@ const lambdas = async (): Promise<number> => {
 const run = async (command: string, args: string[]): Promise<number> => {
   const opts = Object.fromEntries(
     args
-      .map((a, i) => [a.replace(/^--/, ""), args[i + 1]])
-      .filter((_, i) => i % 2 == 0)
+      .map((a, i) => [a, args[i + 1] && !args[i+1].startsWith('--') ? args[i+1] : true] as const)
+      .filter(([k]) => k.startsWith('--'))
+      .map(([k, v]) => [k.replace(/^--/, ""), v])
   );
   switch (command) {
     case "build":
