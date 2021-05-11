@@ -10,8 +10,26 @@ import getName from "git-user-name";
 import os from "os";
 import spawn, { sync } from "cross-spawn";
 import sodium from "tweetsodium";
+import AWS from "aws-sdk";
+import JSZip from "jszip";
+
+const lambda = new AWS.Lambda({
+  apiVersion: "2015-03-31",
+  region: "us-east-1",
+});
 
 const appPath = (p: string) => path.resolve(fs.realpathSync(process.cwd()), p);
+
+const getDotEnvPlugin = () => {
+  const env = fs.existsSync(".env.local")
+    ? dotenv.parse(fs.readFileSync(".env.local"))
+    : {};
+  return new webpack.DefinePlugin(
+    Object.fromEntries(
+      Object.keys(env).map((k) => [`process.env.${k}`, env[k]])
+    )
+  );
+};
 
 const getBaseConfig = (): Promise<
   Required<
@@ -36,9 +54,6 @@ const getBaseConfig = (): Promise<
     );
   }
 
-  const env = fs.existsSync(".env.local")
-    ? dotenv.parse(fs.readFileSync(".env.local"))
-    : {};
   return Promise.resolve({
     entry: `./src/${entryFile}`,
     target: "web",
@@ -125,14 +140,34 @@ const getBaseConfig = (): Promise<
         },
       ],
     },
-    plugins: [
-      new webpack.DefinePlugin(
-        Object.fromEntries(
-          Object.keys(env).map((k) => [`process.env.${k}`, env[k]])
-        )
-      ),
-    ],
+    plugins: [getDotEnvPlugin()],
   });
+};
+
+const webpackCallback = (
+  resolve: (value: number | PromiseLike<number>) => void,
+  reject: (reason?: Error | string) => void
+) => (err: Error, stats: webpack.Stats) => {
+  if (err || !stats) {
+    reject(err);
+  } else {
+    console.log(
+      "Successfully compiled from",
+      new Date(stats.startTime || 0).toLocaleTimeString(),
+      "to",
+      new Date(stats.endTime || 0).toLocaleTimeString()
+    );
+    if (stats.hasErrors()) {
+      reject(
+        stats.toString({
+          chunks: false,
+          colors: true,
+        })
+      );
+    } else {
+      resolve(0);
+    }
+  }
 };
 
 const build = (): Promise<number> => {
@@ -149,28 +184,7 @@ const build = (): Promise<number> => {
               maxAssetSize: 5000000,
             },
           },
-          (err, stats) => {
-            if (err || !stats) {
-              reject(err);
-            } else {
-              console.log(
-                "Successfully compiled from",
-                new Date(stats.startTime || 0).toLocaleTimeString(),
-                "to",
-                new Date(stats.endTime || 0).toLocaleTimeString()
-              );
-              if (stats.hasErrors()) {
-                reject(
-                  stats.toString({
-                    chunks: false,
-                    colors: true,
-                  })
-                );
-              } else {
-                resolve(0);
-              }
-            }
-          }
+          webpackCallback(resolve, reject)
         );
       })
       .catch(reject);
@@ -557,6 +571,87 @@ build
   return Promise.resolve(0);
 };
 
+const lambdas = async (): Promise<number> => {
+  return new Promise<number>((resolve, reject) => {
+    webpack(
+      {
+        entry: Object.fromEntries(
+          fs
+            .readdirSync("./lambdas/", { withFileTypes: true })
+            .filter((f) => !f.isDirectory())
+            .map((f) => f.name)
+            .map((f) => [f.replace(/\.[t|j]s$/, ""), `./lambdas/${f}`])
+        ),
+        target: "node",
+        mode: "production",
+        module: {
+          rules: [
+            {
+              test: /\.ts$/,
+              use: [
+                {
+                  loader: "ts-loader",
+                  options: {
+                    transpileOnly: true,
+                  },
+                },
+              ],
+              exclude: /node_modules/,
+            },
+            {
+              test: /\.br$/,
+              use: [
+                {
+                  loader: "file-loader",
+                  options: {
+                    name: "[path][name].[ext]",
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        output: {
+          libraryTarget: "commonjs2",
+          path: path.join(__dirname, "out"),
+          filename: "[name].js",
+        },
+        resolve: {
+          extensions: [".ts", ".js"],
+        },
+        node: {
+          __dirname: true,
+        },
+        externals: ["aws-sdk"],
+        plugins: [getDotEnvPlugin()],
+      },
+      webpackCallback(resolve, reject)
+    );
+  }).then((code) => {
+    const zip = new JSZip();
+    return Promise.all(
+      fs.readdirSync("./out/").map((f) => {
+        const content = fs.readFileSync(`./out/${f}`);
+        zip.file(f, content);
+        /*zip
+        .generateNodeStream({ type: "nodebuffer", streamFiles: true })
+        .pipe(fs.createWriteStream(f.replace(/\.js$/, ".zip")))
+        .on('finish', resolve);*/
+        return zip.generateAsync({ type: "blob" }).then((ZipFile) =>
+          lambda
+            .updateFunctionCode({
+              FunctionName: `RoamJS_${f.replace(/\.js$/, "")}`,
+              Publish: true,
+              ZipFile,
+            })
+            .promise()
+            .then(() => console.log(`Succesfully uploaded ${f}`))
+        );
+      })
+    ).then(() => code);
+  });
+};
+
 const run = async (command: string, args: string[]): Promise<number> => {
   const opts = Object.fromEntries(
     args
@@ -570,6 +665,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return dev(opts);
     case "init":
       return init(opts);
+    case "lambdas":
+      return lambdas();
     default:
       console.error("Command", command, "is unsupported");
       return 1;
