@@ -268,10 +268,13 @@ const init = async ({
   const root = path.resolve(name);
   const projectName = name.replace(/^roamjs-/, "");
   const projectDescription = description || `Description for ${projectName}.`;
+  const extensionExists = fs.existsSync(name);
+  const terraformOrganizationToken = process.env.TERRAFORM_ORGANIZATION_TOKEN;
   const tasks = [
     {
       title: "Make Project Directory",
       task: () => fs.mkdirSync(name),
+      skip: () => extensionExists,
     },
     {
       title: "Write Package JSON",
@@ -295,6 +298,7 @@ const init = async ({
           )
         );
       },
+      skip: () => extensionExists,
     },
     {
       title: "Write README.md",
@@ -306,6 +310,7 @@ const init = async ({
 ${projectDescription}
       `
         ),
+      skip: () => extensionExists,
     },
     {
       title: "Write tsconfig.json",
@@ -321,6 +326,7 @@ ${projectDescription}
           JSON.stringify(tsconfig, null, 2) + os.EOL
         );
       },
+      skip: () => extensionExists,
     },
     {
       title: "Write main.yaml",
@@ -335,7 +341,7 @@ on:
   push:
     branches: main
     paths:
-      - "src/*"
+      - "src/**"
       - ".github/workflows/main.yaml"
 
 jobs:
@@ -357,6 +363,7 @@ jobs:
 `
         );
       },
+      skip: () => extensionExists,
     },
     {
       title: "Write .gitignore",
@@ -368,6 +375,7 @@ build
 `
         );
       },
+      skip: () => extensionExists,
     },
     {
       title: "Write LICENSE",
@@ -398,6 +406,7 @@ build
   `
         );
       },
+      skip: () => extensionExists,
     },
     {
       title: "Install Dev Packages",
@@ -426,6 +435,31 @@ build
           });
         });
       },
+      skip: () => extensionExists,
+    },
+    {
+      title: "Install Backend Dev Packages",
+      task: () => {
+        process.chdir(root);
+        return new Promise<void>((resolve, reject) => {
+          const dependencies = ["aws-lambda"];
+          const child = spawn(
+            "npm",
+            ["install", "--save-dev"].concat(dependencies),
+            {
+              stdio: "inherit",
+            }
+          );
+          child.on("close", (code) => {
+            if (code !== 0) {
+              reject(code);
+              return;
+            }
+            resolve();
+          });
+        });
+      },
+      skip: () => !backend,
     },
     {
       title: "Install Packages",
@@ -452,6 +486,7 @@ build
           });
         });
       },
+      skip: () => extensionExists,
     },
     {
       title: "Write src",
@@ -462,6 +497,101 @@ build
           `const CONFIG = \`roam/js/${projectName}\`;`
         );
       },
+      skip: () => extensionExists,
+    },
+    {
+      title: "Write aws.tf",
+      task: () => {
+        return Promise.resolve(
+          fs.writeFileSync(
+            path.join(root, "aws.tf"),
+            `terraform {
+  backend "remote" {
+    hostname = "app.terraform.io"
+    organization = "VargasArts"
+    workspaces {
+      prefix = "${name}"
+    }
+  }
+  required_providers {
+    github = {
+      source = "integrations/github"
+      version = "4.2.0"
+    }
+  }
+}
+
+variable "aws_access_token" {
+  type = string
+}
+
+variable "aws_secret_token" {
+  type = string
+}
+
+variable "developer_token" {
+  type = string
+}
+
+variable "github_token" {
+  type = string
+}
+
+provider "aws" {
+  region = "us-east-1"
+  access_key = var.aws_access_token
+  secret_key = var.aws_secret_token
+}
+
+provider "github" {
+    owner = "dvargas92495"
+    token = var.github_token
+}
+
+module "roamjs_lambda" {
+  source = "dvargas92495/lambda/roamjs"
+
+  name = "${projectName}"
+  paths = [
+    { 
+      path = "${projectName}", 
+      method = "post"
+    },
+  ]
+  aws_access_token = var.aws_access_token
+  aws_secret_token = var.aws_secret_token
+  github_token     = var.github_token
+  developer_token  = var.developer_token
+}
+`
+          )
+        );
+      },
+      skip: () => !backend,
+    },
+    {
+      title: "Write lambdas",
+      task: () => {
+        fs.mkdirSync(path.join(root, "lambdas"));
+        return fs.writeFileSync(
+          path.join(root, "src", "index.ts"),
+          `import { APIGatewayProxyHandler } from "aws-lambda";
+
+export const handler: APIGatewayProxyHandler = (event) => {
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      success: true,
+    }),
+    headers: {
+      "Access-Control-Allow-Origin": "https://roamresearch.com",
+      "Access-Control-Allow-Methods": "POST",
+    },
+  };
+}`
+        );
+      },
+      skip: () => !backend,
     },
     {
       title: "Create a github repo",
@@ -470,7 +600,7 @@ build
           .post("https://api.github.com/user/repos", { name }, githubOpts)
           .catch((e) => console.log("Failed to create repo", e.response?.data));
       },
-      skip: () => !user || !process.env.GITHUB_TOKEN,
+      skip: () => !user || !process.env.GITHUB_TOKEN || extensionExists,
     },
     {
       title: "Add Developer Tokens As Secrets",
@@ -510,7 +640,8 @@ build
           addSecret("ROAMJS_RELEASE_TOKEN"),
         ]).catch((e) => console.log("Failed to add secret", e.response?.data));
       },
-      skip: () => !user || !process.env.GITHUB_TOKEN || backend,
+      skip: () =>
+        !user || !process.env.GITHUB_TOKEN || backend || extensionExists,
     },
     {
       title: "Git init",
@@ -518,6 +649,7 @@ build
         process.chdir(root);
         return sync("git init", { stdio: "ignore" });
       },
+      skip: () => extensionExists,
     },
     {
       title: "Git add",
@@ -525,6 +657,7 @@ build
         process.chdir(root);
         return sync("git add -A", { stdio: "ignore" });
       },
+      skip: () => extensionExists,
     },
     {
       title: "Git commit",
@@ -537,6 +670,60 @@ build
           }
         );
       },
+      skip: () => extensionExists,
+    },
+    {
+      title: "Create Workspace",
+      task: () => {
+        const tfOpts = {
+          headers: { Authorization: `Bearer ${terraformOrganizationToken}` },
+        };
+        return axios
+          .get<{
+            data: { attributes: { "service-provider": string }; id: string }[];
+          }>(
+            "https://app.terraform.io/api/v2/organizations/VargasArts/oauth-clients",
+            tfOpts
+          )
+          .then(
+            (r) =>
+              r.data.data.find(
+                (cl) => cl.attributes["service-provider"] === "github"
+              )?.id
+          )
+          .then((id) =>
+            axios
+              .get(
+                `https://app.terraform.io/api/v2/oauth-clients/${id}/oauth-tokens`,
+                tfOpts
+              )
+              .then((r) => r.data.data[0].id)
+          )
+          .then((id) =>
+            axios.post(
+              "https://app.terraform.io/api/v2/organizations/VargasArts/workspaces",
+              {
+                data: {
+                  type: "workspaces",
+                  attributes: {
+                    name,
+                    "auto-apply": true,
+                    "vcs-repo": {
+                      "oauth-token-id": id,
+                    },
+                    identifier: `${user}/${name}`,
+                  },
+                },
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${terraformOrganizationToken}`,
+                },
+              }
+            )
+          );
+      },
+      skip: () => !backend || !terraformOrganizationToken || !user,
     },
     {
       title: "Git remote",
@@ -547,7 +734,7 @@ build
           { stdio: "ignore" }
         );
       },
-      skip: () => !user,
+      skip: () => !user || extensionExists,
     },
     {
       title: "Git push",
@@ -555,7 +742,7 @@ build
         process.chdir(root);
         return sync(`git push origin main`, { stdio: "ignore" });
       },
-      skip: () => !user,
+      skip: () => !user || extensionExists,
     },
   ] as { title: string; task: () => Promise<void>; skip?: () => boolean }[];
   for (const task of tasks) {
