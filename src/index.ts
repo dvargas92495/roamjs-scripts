@@ -11,6 +11,7 @@ import os from "os";
 import spawn, { sync } from "cross-spawn";
 import sodium from "tweetsodium";
 import AWS from "aws-sdk";
+import mime from "mime-types";
 import JSZip from "jszip";
 
 const lambda = new AWS.Lambda({
@@ -301,6 +302,22 @@ const init = async ({
       skip: () => extensionExists,
     },
     {
+      title: "Add backend to package.json",
+      task: () => {
+        const packageJson = JSON.parse(
+          fs.readFileSync(path.join(root, "package.json")).toString()
+        );
+        packageJson.scripts.lambdas = "roamjs-scripts lambdas";
+        return Promise.resolve(
+          fs.writeFileSync(
+            path.join(root, "package.json"),
+            JSON.stringify(packageJson, null, 2) + os.EOL
+          )
+        );
+      },
+      skip: () => !backend,
+    },
+    {
       title: "Write README.md",
       task: () =>
         fs.writeFileSync(
@@ -364,6 +381,44 @@ jobs:
         );
       },
       skip: () => extensionExists,
+    },
+    {
+      title: "Write lambda.yaml",
+      task: () => {
+        fs.mkdirSync(path.join(root, ".github", "workflows"), {
+          recursive: true,
+        });
+        return fs.writeFileSync(
+          path.join(root, "main.yaml"),
+          `name: Publish Lambda
+on:
+  push:
+    branches: main
+    paths:
+      - "lambdas/*"
+      - ".github/workflows/lambda.yaml"
+
+env:
+  AWS_ACCESS_KEY_ID: \${{ secrets.DEPLOY_AWS_ACCESS_KEY }}
+  AWS_SECRET_ACCESS_KEY: \${{ secrets.DEPLOY_AWS_ACCESS_SECRET }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 12.16.1
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.16.1
+      - name: install
+        run: npm install
+      - name: Deploy
+        run: npm run lambdas
+`
+        );
+      },
+      skip: () => !backend,
     },
     {
       title: "Write .gitignore",
@@ -500,11 +555,11 @@ build
       skip: () => extensionExists,
     },
     {
-      title: "Write aws.tf",
+      title: "Write main.tf",
       task: () => {
         return Promise.resolve(
           fs.writeFileSync(
-            path.join(root, "aws.tf"),
+            path.join(root, "main.tf"),
             `terraform {
   backend "remote" {
     hostname = "app.terraform.io"
@@ -550,9 +605,13 @@ provider "github" {
 
 module "roamjs_lambda" {
   source = "dvargas92495/lambda/roamjs"
+  providers = {
+    aws = aws
+    github = github
+  }
 
   name = "${projectName}"
-  paths = [
+  lambdas = [
     { 
       path = "${projectName}", 
       method = "post"
@@ -574,7 +633,7 @@ module "roamjs_lambda" {
       task: () => {
         fs.mkdirSync(path.join(root, "lambdas"));
         return fs.writeFileSync(
-          path.join(root, "src", "index.ts"),
+          path.join(root, "lambdas", "index.ts"),
           `import { APIGatewayProxyHandler } from "aws-lambda";
 
 export const handler: APIGatewayProxyHandler = (event) => {
@@ -676,7 +735,10 @@ export const handler: APIGatewayProxyHandler = (event) => {
       title: "Create Workspace",
       task: () => {
         const tfOpts = {
-          headers: { Authorization: `Bearer ${terraformOrganizationToken}` },
+          headers: {
+            Authorization: `Bearer ${terraformOrganizationToken}`,
+            "Content-Type": "application/vnd.api+json",
+          },
         };
         return axios
           .get<{
@@ -700,26 +762,50 @@ export const handler: APIGatewayProxyHandler = (event) => {
               .then((r) => r.data.data[0].id)
           )
           .then((id) =>
-            axios.post(
-              "https://app.terraform.io/api/v2/organizations/VargasArts/workspaces",
-              {
-                data: {
-                  type: "workspaces",
-                  attributes: {
-                    name,
-                    "auto-apply": true,
-                    "vcs-repo": {
-                      "oauth-token-id": id,
+            axios
+              .post(
+                "https://app.terraform.io/api/v2/organizations/VargasArts/workspaces",
+                {
+                  data: {
+                    type: "workspaces",
+                    attributes: {
+                      name,
+                      "auto-apply": true,
+                      "vcs-repo": {
+                        "oauth-token-id": id,
+                        identifier: `${user}/${name}`,
+                      },
                     },
-                    identifier: `${user}/${name}`,
                   },
                 },
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${terraformOrganizationToken}`,
-                },
-              }
+                tfOpts
+              )
+              .then((r) => r.data.data.id)
+          )
+          .then((id) =>
+            Promise.all(
+              [
+                { key: "aws_access_token", env: "AWS_ACCESS_TOKEN" },
+                { key: "aws_secret_token", env: "AWS_SECRET_TOKEN" },
+                { key: "developer_token", env: "ROAMJS_DEVELOPER_TOKEN" },
+                { key: "github_token", env: "GITHUB_TOKEN" },
+              ].map(({ key, env }) =>
+                axios.post(
+                  `https://app.terraform.io/api/v2/workspaces/${id}/vars`,
+                  {
+                    data: {
+                      type: "vars",
+                      attributes: {
+                        key,
+                        sensitive: true,
+                        category: "terraform",
+                        value: process.env[env],
+                      },
+                    },
+                  },
+                  tfOpts
+                )
+              )
             )
           );
       },
@@ -847,6 +933,167 @@ const lambdas = async (): Promise<number> => {
   });
 };
 
+type Credentials = {
+  AccessKeyId: string;
+  SecretAccessKey: string;
+  SessionToken: string;
+};
+
+const EXCLUSIONS = new Set([
+  ".git",
+  ".github",
+  ".replit",
+  "LICENSE",
+  "README.md",
+]);
+
+const readDir = (s: string): string[] =>
+  fs
+    .readdirSync(s, { withFileTypes: true })
+    .filter((f) => !EXCLUSIONS.has(f.name.split("/").slice(-1)[0]))
+    .flatMap((f) =>
+      f.isDirectory() ? readDir(path.join(s, f.name)) : [path.join(s, f.name)]
+    );
+
+const toDoubleDigit = (n: number) => n.toString().padStart(2, "0");
+
+const publish = async ({
+  token,
+  source,
+  path: destPathInput,
+  logger: { info, warning } = { info: console.log, warning: console.warn },
+}: {
+  token?: string;
+  source?: string;
+  path?: string;
+  logger?: {
+    info: (s: string) => void;
+    warning: (s: string) => void;
+  };
+}): Promise<number> => {
+  const Authorization = token || process.env.ROAMJS_DEVELOPER_TOKEN;
+  const sourcePath = appPath(source || "build");
+  info(`Source Path: ${sourcePath}`);
+  const fileNames = readDir(sourcePath);
+
+  if (fileNames.length > 100) {
+    return Promise.reject(
+      new Error(
+        `Attempting to upload too many files from ${sourcePath}. Max: 100, Actual: ${fileNames.length}`
+      )
+    );
+  }
+  if (!destPathInput) {
+    return Promise.reject(new Error("`path` argument is required."));
+  }
+  if (destPathInput.endsWith("/")) {
+    warning("No need to put an ending slash on the `path` input");
+  }
+  const destPath = destPathInput.replace(/\/$/, "");
+  info(
+    `Preparing to publish ${fileNames.length} files to RoamJS destination ${destPath}`
+  );
+  return axios
+    .post<{ credentials: Credentials; distributionId: string }>(
+      "https://api.roamjs.com/publish",
+      { path: destPath },
+      { headers: { Authorization } }
+    )
+    .then((r) => {
+      const credentials = {
+        accessKeyId: r.data.credentials.AccessKeyId,
+        secretAccessKey: r.data.credentials.SecretAccessKey,
+        sessionToken: r.data.credentials.SessionToken,
+      };
+      const s3 = new AWS.S3({
+        apiVersion: "2006-03-01",
+        credentials,
+      });
+      const cloudfront = new AWS.CloudFront({
+        apiVersion: "2020-05-31",
+        credentials,
+      });
+      const waitForCloudfront = (props: {
+        Id: string;
+        DistributionId: string;
+        trial?: number;
+      }) =>
+        new Promise<string>((resolve) => {
+          const { trial = 0, ...args } = props;
+          cloudfront
+            .getInvalidation(args)
+            .promise()
+            .then((r) => r.Invalidation?.Status)
+            .then((status) => {
+              if (status === "Completed") {
+                resolve("Done!");
+              } else if (trial === 60) {
+                resolve("Ran out of time waiting for cloudfront...");
+              } else {
+                setTimeout(
+                  () => waitForCloudfront({ ...args, trial: trial + 1 }),
+                  1000
+                );
+              }
+            });
+        });
+      const today = new Date();
+      const version = `${today.getFullYear()}-${toDoubleDigit(
+        today.getMonth() + 1
+      )}-${toDoubleDigit(today.getDate())}-${toDoubleDigit(
+        today.getHours()
+      )}-${toDoubleDigit(today.getMinutes())}`;
+      return Promise.all(
+        fileNames.flatMap((p) => {
+          const fileName = p.substring(sourcePath.length);
+          const Key = `${destPath}${fileName}`;
+          const uploadProps = {
+            Bucket: "roamjs.com",
+            ContentType: mime.lookup(fileName) || undefined,
+          };
+          info(`Uploading version ${version} of ${p} to ${Key}...`);
+          return [
+            s3
+              .upload({
+                Key: `${destPath}/${version}${fileName}`,
+                ...uploadProps,
+                Body: fs.createReadStream(p),
+              })
+              .promise(),
+            s3
+              .upload({
+                Key,
+                ...uploadProps,
+                Body: fs.createReadStream(p),
+              })
+              .promise(),
+          ];
+        })
+      )
+        .then(() =>
+          cloudfront
+            .createInvalidation({
+              DistributionId: r.data.distributionId,
+              InvalidationBatch: {
+                CallerReference: today.toJSON(),
+                Paths: {
+                  Quantity: 1,
+                  Items: [`/${destPath}/*`],
+                },
+              },
+            })
+            .promise()
+            .then((i) => ({
+              Id: i.Invalidation?.Id || "",
+              DistributionId: r.data.distributionId,
+            }))
+        )
+        .then(waitForCloudfront)
+        .then((msg) => info(msg))
+        .then(() => 0);
+    });
+};
+
 const run = async (command: string, args: string[]): Promise<number> => {
   const opts = Object.fromEntries(
     args
@@ -869,6 +1116,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return init(opts);
     case "lambdas":
       return lambdas();
+    case "publish":
+      return publish(opts);
     default:
       console.error("Command", command, "is unsupported");
       return 1;
