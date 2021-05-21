@@ -28,7 +28,7 @@ const getDotEnvPlugin = () => {
     : {};
   return new webpack.DefinePlugin(
     Object.fromEntries(
-      Object.keys(env).map((k) => [`process.env.${k}`, env[k]])
+      Object.keys(env).map((k) => [`process.env.${k}`, JSON.stringify(env[k])])
     )
   );
 };
@@ -153,12 +153,6 @@ const webpackCallback = (
   if (err || !stats) {
     reject(err);
   } else {
-    console.log(
-      "Successfully compiled from",
-      new Date(stats.startTime || 0).toLocaleTimeString(),
-      "to",
-      new Date(stats.endTime || 0).toLocaleTimeString()
-    );
     if (stats.hasErrors()) {
       reject(
         stats.toString({
@@ -167,6 +161,12 @@ const webpackCallback = (
         })
       );
     } else {
+      console.log(
+        "Successfully compiled from",
+        new Date(stats.startTime || 0).toLocaleTimeString(),
+        "to",
+        new Date(stats.endTime || 0).toLocaleTimeString()
+      );
       resolve(0);
     }
   }
@@ -335,7 +335,7 @@ ${projectDescription}
       task: () => {
         const tsconfig = {
           extends: "./node_modules/roamjs-scripts/dist/default.tsconfig",
-          include: ["src"],
+          include: ["src", "lambdas"],
           exclude: ["node_modules"],
         };
 
@@ -851,6 +851,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
 };
 
 const lambdas = async ({ build }: { build?: true }): Promise<number> => {
+  fs.rmSync(appPath("out"), { force: true, recursive: true });
   const config = (fs.existsSync(appPath("roamjs-config.json"))
     ? JSON.parse(fs.readFileSync(appPath("roamjs-config.json")).toString())
     : {}) as { extraFiles?: { [name: string]: string[] } };
