@@ -34,6 +34,7 @@
     "@types/mime-types": "^2.1.0",
     "@types/mini-css-extract-plugin": "^1.4.2",
     "@types/react-dev-utils": "^9.0.5",
+    "@types/rimraf": "^3.0.0",
     "@types/webpack-dev-server": "^3.11.3",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
