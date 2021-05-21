@@ -852,7 +852,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
 
 const lambdas = async ({ build }: { build?: true }): Promise<number> => {
   const config = (fs.existsSync(appPath("roamjs-config.json"))
-    ? JSON.parse(appPath("roamjs-config.json").toString())
+    ? JSON.parse(fs.readFileSync(appPath("roamjs-config.json")).toString())
     : {}) as { extraFiles?: { [name: string]: string[] } };
   return new Promise<number>((resolve, reject) => {
     webpack(
