@@ -849,7 +849,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
   return Promise.resolve(0);
 };
 
-const lambdas = async ({ build }: { build: boolean }): Promise<number> => {
+const lambdas = async ({ build }: { build?: true }): Promise<number> => {
   return new Promise<number>((resolve, reject) => {
     webpack(
       {
