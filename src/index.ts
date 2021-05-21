@@ -850,6 +850,9 @@ export const handler: APIGatewayProxyHandler = (event) => {
 };
 
 const lambdas = async ({ build }: { build?: true }): Promise<number> => {
+  const config = (fs.existsSync(appPath("roamjs-config.json"))
+    ? JSON.parse(appPath("roamjs-config.json").toString())
+    : {}) as { extraFiles?: { [name: string]: string[] } };
   return new Promise<number>((resolve, reject) => {
     webpack(
       {
@@ -907,31 +910,38 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
     );
   }).then((code) => {
     const zip = new JSZip();
-    return build
-      ? Promise.resolve(code)
-      : Promise.all(
-          fs.readdirSync(appPath("out")).map((f) => {
-            const content = fs.readFileSync(path.join(appPath("out"), f));
-            zip.file(f, content);
-            const data: Uint8Array[] = [];
-            return new Promise<void>((resolve) =>
-              zip
-                .generateNodeStream({ type: "nodebuffer", streamFiles: true })
-                .on("data", (d) => data.push(d))
-                .on("end", () =>
-                  lambda
+    return Promise.all(
+      fs.readdirSync(appPath("out")).map((f) => {
+        const content = fs.readFileSync(path.join(appPath("out"), f));
+        zip.file(f, content);
+        const name = f.replace(/\.js$/, "");
+        (config.extraFiles?.[name] || []).forEach((ff) =>
+          zip.file(ff, fs.readFileSync(path.join(appPath("out"), ff)))
+        );
+        const data: Uint8Array[] = [];
+        return new Promise<void>((resolve) =>
+          zip
+            .generateNodeStream({ type: "nodebuffer", streamFiles: true })
+            .on("data", (d) => data.push(d))
+            .on("end", () =>
+              build
+                ? fs.writeFileSync(
+                    path.join(appPath("out"), f.replace(/\.js$/, ".zip")),
+                    Buffer.concat(data).toString()
+                  )
+                : lambda
                     .updateFunctionCode({
-                      FunctionName: `RoamJS_${f.replace(/\.js$/, "")}`,
+                      FunctionName: `RoamJS_${name}`,
                       Publish: true,
                       ZipFile: Buffer.concat(data),
                     })
                     .promise()
                     .then(() => console.log(`Succesfully uploaded ${f}`))
                     .then(resolve)
-                )
-            );
-          })
-        ).then(() => code);
+            )
+        );
+      })
+    ).then(() => code);
   });
 };
 
