@@ -912,71 +912,75 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
   }).then((code) => {
     const zip = new JSZip();
     return Promise.all(
-      fs.readdirSync(appPath("out")).map((f) => {
-        console.log(`Zipping ${path.join(appPath("out"), f)}...`);
-        const content = fs.readFileSync(path.join(appPath("out"), f));
-        zip.file(f, content);
-        const name = f.replace(/\.js$/, "");
-        (config.extraFiles?.[name] || []).forEach((ff) => {
-          console.log(
-            `Zipping ${path.join(appPath("out"), ff)} as part of ${f}...`
-          );
-          zip.file(ff, fs.readFileSync(path.join(appPath("out"), ff)));
-        });
-        const shasum = crypto.createHash("sha256");
-        const data: Uint8Array[] = [];
-        return new Promise<void>((resolve) =>
-          zip
-            .generateNodeStream({ type: "nodebuffer", streamFiles: true })
-            .on("data", (d) => {
-              data.push(d);
-              shasum.update(d);
-            })
-            .on("end", () => {
-              console.log(`Zip of ${name} complete.`);
-              const sha256 = shasum.digest("base64");
-              const FunctionName = `RoamJS_${name}`;
-              lambda
-                .getFunction({
-                  FunctionName,
-                })
-                .promise()
-                .then((l) => {
-                  if (sha256 === l.Configuration?.CodeSha256) {
-                    return `No need to upload ${f}, shas match.`;
-                  } else {
-                    return build
-                      ? new Promise((resolve) =>
-                          fs.writeFile(
-                            path.join(
-                              appPath("out"),
-                              f.replace(/\.js$/, ".zip")
-                            ),
-                            Buffer.concat(data).toString(),
-                            () =>
-                              resolve(
-                                `Would've uploaded ${f}, wrote zip to disk`
-                              )
+      fs
+        .readdirSync(appPath("out"), { withFileTypes: true })
+        .filter((f) => !f.isDirectory())
+        .map((f) => f.name)
+        .map((f) => {
+          console.log(`Zipping ${path.join(appPath("out"), f)}...`);
+          const content = fs.readFileSync(path.join(appPath("out"), f));
+          zip.file(f, content);
+          const name = f.replace(/\.js$/, "");
+          (config.extraFiles?.[name] || []).forEach((ff) => {
+            console.log(
+              `Zipping ${path.join(appPath("out"), ff)} as part of ${f}...`
+            );
+            zip.file(ff, fs.readFileSync(path.join(appPath("out"), ff)));
+          });
+          const shasum = crypto.createHash("sha256");
+          const data: Uint8Array[] = [];
+          return new Promise<void>((resolve) =>
+            zip
+              .generateNodeStream({ type: "nodebuffer", streamFiles: true })
+              .on("data", (d) => {
+                data.push(d);
+                shasum.update(d);
+              })
+              .on("end", () => {
+                console.log(`Zip of ${name} complete.`);
+                const sha256 = shasum.digest("base64");
+                const FunctionName = `RoamJS_${name}`;
+                lambda
+                  .getFunction({
+                    FunctionName,
+                  })
+                  .promise()
+                  .then((l) => {
+                    if (sha256 === l.Configuration?.CodeSha256) {
+                      return `No need to upload ${f}, shas match.`;
+                    } else {
+                      return build
+                        ? new Promise((resolve) =>
+                            fs.writeFile(
+                              path.join(
+                                appPath("out"),
+                                f.replace(/\.js$/, ".zip")
+                              ),
+                              Buffer.concat(data).toString(),
+                              () =>
+                                resolve(
+                                  `Would've uploaded ${f}, wrote zip to disk`
+                                )
+                            )
                           )
-                        )
-                      : lambda
-                          .updateFunctionCode({
-                            FunctionName,
-                            Publish: true,
-                            ZipFile: Buffer.concat(data),
-                          })
-                          .promise()
-                          .then(
-                            (upd) =>
-                              `Succesfully uploaded ${f} at ${upd.LastModified}`
-                          );
-                  }
-                })
-                .then(console.log)
-                .then(resolve);
-            })
-        );
-      })
+                        : lambda
+                            .updateFunctionCode({
+                              FunctionName,
+                              Publish: true,
+                              ZipFile: Buffer.concat(data),
+                            })
+                            .promise()
+                            .then(
+                              (upd) =>
+                                `Succesfully uploaded ${f} at ${upd.LastModified}`
+                            );
+                    }
+                  })
+                  .then(console.log)
+                  .then(resolve);
+              })
+          );
+        })
     ).then(() => code);
   });
 };
