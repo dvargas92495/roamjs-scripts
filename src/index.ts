@@ -13,6 +13,7 @@ import sodium from "tweetsodium";
 import AWS from "aws-sdk";
 import mime from "mime-types";
 import JSZip from "jszip";
+import crypto from "crypto";
 
 const lambda = new AWS.Lambda({
   apiVersion: "2015-03-31",
@@ -918,27 +919,50 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         (config.extraFiles?.[name] || []).forEach((ff) =>
           zip.file(ff, fs.readFileSync(path.join(appPath("out"), ff)))
         );
+        const shasum = crypto.createHash("sha256");
         const data: Uint8Array[] = [];
         return new Promise<void>((resolve) =>
           zip
             .generateNodeStream({ type: "nodebuffer", streamFiles: true })
-            .on("data", (d) => data.push(d))
-            .on("end", () =>
-              build
-                ? fs.writeFileSync(
-                    path.join(appPath("out"), f.replace(/\.js$/, ".zip")),
-                    Buffer.concat(data).toString()
-                  )
-                : lambda
-                    .updateFunctionCode({
-                      FunctionName: `RoamJS_${name}`,
-                      Publish: true,
-                      ZipFile: Buffer.concat(data),
-                    })
-                    .promise()
-                    .then(() => console.log(`Succesfully uploaded ${f}`))
-                    .then(resolve)
-            )
+            .on("data", (d) => {
+              data.push(d);
+              shasum.update(d);
+            })
+            .on("end", () => {
+              if (build) {
+                fs.writeFileSync(
+                  path.join(appPath("out"), f.replace(/\.js$/, ".zip")),
+                  Buffer.concat(data).toString()
+                );
+                return;
+              }
+              const sha256 = shasum.digest("base64");
+              const FunctionName = `RoamJS_${name}`;
+              lambda
+                .getFunction({
+                  FunctionName,
+                })
+                .promise()
+                .then((l) => {
+                  if (sha256 === l.Configuration?.CodeSha256) {
+                    return `No need to upload ${f}, shas match.`;
+                  } else {
+                    return lambda
+                      .updateFunctionCode({
+                        FunctionName,
+                        Publish: true,
+                        ZipFile: Buffer.concat(data),
+                      })
+                      .promise()
+                      .then(
+                        (upd) =>
+                          `Succesfully uploaded ${f} at ${upd.LastModified}`
+                      );
+                  }
+                })
+                .then(console.log)
+                .then(resolve);
+            })
         );
       })
     ).then(() => code);
