@@ -912,13 +912,13 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
       webpackCallback(resolve, reject)
     );
   }).then((code) => {
-    const zip = new JSZip();
     return Promise.all(
       fs
         .readdirSync(appPath("out"), { withFileTypes: true })
         .filter((f) => !f.isDirectory())
         .map((f) => f.name)
         .map((f) => {
+          const zip = new JSZip();
           console.log(`Zipping ${path.join(appPath("out"), f)}...`);
           const content = fs.readFileSync(path.join(appPath("out"), f));
           zip.file(f, content);
