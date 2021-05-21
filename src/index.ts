@@ -14,6 +14,7 @@ import AWS from "aws-sdk";
 import mime from "mime-types";
 import JSZip from "jszip";
 import crypto from "crypto";
+import rimraf from "rimraf";
 
 const lambda = new AWS.Lambda({
   apiVersion: "2015-03-31",
@@ -851,7 +852,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
 };
 
 const lambdas = async ({ build }: { build?: true }): Promise<number> => {
-  fs.rmSync(appPath("out"), { force: true, recursive: true });
+  await new Promise((resolve) => rimraf(appPath("out"), resolve));
   const config = (fs.existsSync(appPath("roamjs-config.json"))
     ? JSON.parse(fs.readFileSync(appPath("roamjs-config.json")).toString())
     : {}) as { extraFiles?: { [name: string]: string[] } };
