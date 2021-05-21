@@ -849,7 +849,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
   return Promise.resolve(0);
 };
 
-const lambdas = async (): Promise<number> => {
+const lambdas = async ({build}: {build: boolean}): Promise<number> => {
   return new Promise<number>((resolve, reject) => {
     webpack(
       {
@@ -907,7 +907,7 @@ const lambdas = async (): Promise<number> => {
     );
   }).then((code) => {
     const zip = new JSZip();
-    return Promise.all(
+    return build ? Promise.resolve(code) : Promise.all(
       fs.readdirSync(appPath("out")).map((f) => {
         const content = fs.readFileSync(path.join(appPath("out"), f));
         zip.file(f, content);
@@ -1115,7 +1115,7 @@ const run = async (command: string, args: string[]): Promise<number> => {
     case "init":
       return init(opts);
     case "lambdas":
-      return lambdas();
+      return lambdas(opts);
     case "publish":
       return publish(opts);
     default:

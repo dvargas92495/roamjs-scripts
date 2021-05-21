@@ -24,4 +24,14 @@ Uploads your extension to RoamJS' hosting service for distribution. It supports 
 - `path` - The RoamJS destination path that the extension is being uploaded to.
 - `source` - The source directory that the extension will upload assets from. Default value `build`.
 - `token` - The RoamJS developer token required to be allowed to upload to RoamJS. To generate a token, sign up at `https://roamjs.com/services/developer`. Default value uses the `ROAMJS_DEVELOPER_TOKEN` environment variable (recommended).
- 
+
+To use from `npx`:
+
+```bash
+npx roamjs-scripts publish --path google-calendar --source build
+```
+
+To use from `npm` script after installing:
+```bash
+roamjs-scripts publish --path google-calendar --source build
+```
