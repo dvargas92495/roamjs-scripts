@@ -899,7 +899,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
           ],
         },
         output: {
-          libraryTarget: "commonjs2",
+          libraryTarget: "umd",
           path: path.resolve("out"),
           filename: "[name].js",
         },
