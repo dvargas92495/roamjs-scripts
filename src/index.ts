@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import webpack from "webpack";
+import webpack, { Stats } from "webpack";
 import webpackDevServer from "webpack-dev-server";
 import fs from "fs";
 import path from "path";
@@ -135,7 +135,10 @@ const getBaseConfig = (): Promise<
         },
         {
           test: /\.(png|woff|woff2|eot|ttf)$/,
-          loader: "url-loader?limit=100000",
+          loader: "url-loader",
+          options: {
+            limit: 100000,
+          },
         },
         {
           test: /\.ne$/,
@@ -150,7 +153,7 @@ const getBaseConfig = (): Promise<
 const webpackCallback = (
   resolve: (value: number | PromiseLike<number>) => void,
   reject: (reason?: Error | string) => void
-) => (err: Error, stats: webpack.Stats) => {
+) => (err?: Error, stats?: Stats): void => {
   if (err || !stats) {
     reject(err);
   } else {
@@ -199,7 +202,7 @@ const dev = async ({ port: inputPort }: { port?: string }): Promise<number> => {
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
-        baseConfig.module.rules.push({
+        baseConfig.module.rules?.push({
           test: /\.js$/,
           enforce: "pre",
           use: ["source-map-loader"],

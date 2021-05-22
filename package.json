@@ -71,7 +71,7 @@
     "ts-loader": "^8.2.0",
     "tweetsodium": "0.0.5",
     "url-loader": "^4.1.1",
-    "webpack": "^4.44.1",
+    "webpack": "^5.37.1",
     "webpack-dev-server": "^3.11.2"
   }
 }
