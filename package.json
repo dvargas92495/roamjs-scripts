@@ -70,7 +70,7 @@
     "ts-loader": "^9.2.1",
     "tweetsodium": "0.0.5",
     "url-loader": "^4.1.1",
-    "webpack": "^5.37.1",
+    "webpack": "^5.2.0",
     "webpack-dev-server": "^3.11.2"
   }
 }
