@@ -339,7 +339,7 @@ ${projectDescription}
       task: () => {
         const tsconfig = {
           extends: "./node_modules/roamjs-scripts/dist/default.tsconfig",
-          include: ["src", "lambdas"],
+          include: ["src"],
           exclude: ["node_modules"],
         };
 
@@ -349,6 +349,22 @@ ${projectDescription}
         );
       },
       skip: () => extensionExists,
+    },
+    {
+      title: "Add backend to tsconfig.json",
+      task: () => {
+        const tsconfig = JSON.parse(
+          fs.readFileSync(path.join(root, "tsconfig.json")).toString()
+        );
+        tsconfig.include.push("lambdas");
+        return Promise.resolve(
+          fs.writeFileSync(
+            path.join(root, "tsconfig.json"),
+            JSON.stringify(tsconfig, null, 2) + os.EOL
+          )
+        );
+      },
+      skip: () => !backend,
     },
     {
       title: "Write main.yaml",
@@ -385,7 +401,7 @@ jobs:
 `
         );
       },
-      skip: () => extensionExists,
+      skip: () => extensionExists || !process.env.ROAMJS_DEVELOPER_TOKEN,
     },
     {
       title: "Write lambda.yaml",
@@ -432,6 +448,8 @@ jobs:
           path.join(root, ".gitignore"),
           `node_modules
 build
+dist
+out
 `
         );
       },
@@ -705,7 +723,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
         ]).catch((e) => console.log("Failed to add secret", e.response?.data));
       },
       skip: () =>
-        !user || !process.env.GITHUB_TOKEN || backend || extensionExists,
+        !user || !process.env.GITHUB_TOKEN || backend || extensionExists || !process.env.ROAMJS_DEVELOPER_TOKEN,
     },
     {
       title: "Git init",
@@ -814,7 +832,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
             )
           );
       },
-      skip: () => !backend || !terraformOrganizationToken || !user,
+      skip: () => !backend || !terraformOrganizationToken || !user || !process.env.ROAMJS_DEVELOPER_TOKEN || !process.env.GITHUB_TOKEN,
     },
     {
       title: "Git remote",

@@ -12,7 +12,15 @@ Compiles your extension and serves it from `webpack-dev-server`. Changes made wh
 
 ### init
 
-Generates a new repo for a new RoamJS extension. Please reach out before using this command, as its very opinionated towards my specific workflow at the moment.
+Generates a new repo for a new RoamJS extension. Please reach out before using this command, as its very opinionated towards my specific workflow at the moment. It supports the following argument:
+- `name` - The name of the RoamJS extension
+- `description` - The description of the RoamJS extension
+- `user` - The name of the github repo to create for the extension
+- `backend` - A boolean flag indicating whether or not to include backend resources for the extension.
+
+You could also add the following environment variables:
+- `GITHUB_TOKEN` - A personal access token from your GitHub account with permission to create repos. Set this if you want a github repo of the same name created in your account.
+- `ROAMJS_DEVELOPER_TOKEN` - The RoamJS token generated for you at [https://roamjs.com/services/developer](https://roamjs.com/services/developer). Set this if you want a GitHub action for publishing the extension to RoamJS created for you, as well as the token added as a secret to your repo. 
 
 ### lambdas
 
