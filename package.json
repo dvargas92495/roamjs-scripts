@@ -1,7 +1,7 @@
 {
   "name": "roamjs-scripts",
   "description": "Description for roamjs-scripts",
-  "version": "0.8.12",
+  "version": "0.8.13",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

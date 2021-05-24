@@ -723,7 +723,11 @@ export const handler: APIGatewayProxyHandler = (event) => {
         ]).catch((e) => console.log("Failed to add secret", e.response?.data));
       },
       skip: () =>
-        !user || !process.env.GITHUB_TOKEN || backend || extensionExists || !process.env.ROAMJS_DEVELOPER_TOKEN,
+        !user ||
+        !process.env.GITHUB_TOKEN ||
+        backend ||
+        extensionExists ||
+        !process.env.ROAMJS_DEVELOPER_TOKEN,
     },
     {
       title: "Git init",
@@ -832,7 +836,12 @@ export const handler: APIGatewayProxyHandler = (event) => {
             )
           );
       },
-      skip: () => !backend || !terraformOrganizationToken || !user || !process.env.ROAMJS_DEVELOPER_TOKEN || !process.env.GITHUB_TOKEN,
+      skip: () =>
+        !backend ||
+        !terraformOrganizationToken ||
+        !user ||
+        !process.env.ROAMJS_DEVELOPER_TOKEN ||
+        !process.env.GITHUB_TOKEN,
     },
     {
       title: "Git remote",
