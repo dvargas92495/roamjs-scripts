@@ -15,7 +15,7 @@ import mime from "mime-types";
 import JSZip from "jszip";
 import crypto from "crypto";
 import rimraf from "rimraf";
-import TerserWebpackPlugin from 'terser-webpack-plugin';
+import TerserWebpackPlugin from "terser-webpack-plugin";
 
 const lambda = new AWS.Lambda({
   apiVersion: "2015-03-31",
@@ -35,7 +35,7 @@ const getDotEnvPlugin = () => {
   );
 };
 
-const optimization: webpack.Configuration['optimization'] = {
+const optimization: webpack.Configuration["optimization"] = {
   minimizer: [
     new TerserWebpackPlugin({
       // Terser Webpack Plugin now depends on jest-worker which uses dynamic path resolution here:
@@ -44,9 +44,9 @@ const optimization: webpack.Configuration['optimization'] = {
       // https://github.com/vercel/ncc/issues/489
       // This prevents any worker initialization, preventing the MODULE_NOT_FOUND error. but is also slower :/
       parallel: false,
-    })
-  ]
-}
+    }),
+  ],
+};
 
 const getBaseConfig = (): Promise<
   Required<
@@ -567,9 +567,13 @@ SOFTWARE.
             "roam-client",
             "roamjs-components",
           ];
-          const child = spawn("npm", ["install", "--quiet"].concat(dependencies), {
-            stdio: "inherit",
-          });
+          const child = spawn(
+            "npm",
+            ["install", "--quiet"].concat(dependencies),
+            {
+              stdio: "inherit",
+            }
+          );
           child.on("close", (code) => {
             if (code !== 0) {
               reject(code);
