@@ -20,7 +20,17 @@ Generates a new repo for a new RoamJS extension. Please reach out before using t
 
 You could also add the following environment variables:
 - `GITHUB_TOKEN` - A personal access token from your GitHub account with permission to create repos. Set this if you want a github repo of the same name created in your account.
-- `ROAMJS_DEVELOPER_TOKEN` - The RoamJS token generated for you at [https://roamjs.com/services/developer](https://roamjs.com/services/developer). Set this if you want a GitHub action for publishing the extension to RoamJS created for you, as well as the token added as a secret to your repo. 
+- `ROAMJS_DEVELOPER_TOKEN` - The RoamJS token generated for you at [https://roamjs.com/services/developer](https://roamjs.com/services/developer). Set this if you want a GitHub action for publishing the extension to RoamJS created for you, as well as the token added as a secret to your repo.
+
+To use from `npx`:
+```bash
+npx roamjs-scripts init --user dvargas92495 --name roamjs-google-calendar --description "Import Google calendar events into Roam!"
+```
+
+To use from `npm` script after installing:
+```bash
+roamjs-scripts init --user dvargas92495 --name roamjs-google-calendar --description "Import Google calendar events into Roam!"
+```
 
 ### lambdas
 
@@ -34,7 +44,6 @@ Uploads your extension to RoamJS' hosting service for distribution. It supports 
 - `token` - The RoamJS developer token required to be allowed to upload to RoamJS. To generate a token, sign up at `https://roamjs.com/services/developer`. Default value uses the `ROAMJS_DEVELOPER_TOKEN` environment variable (recommended).
 
 To use from `npx`:
-
 ```bash
 npx roamjs-scripts publish --path google-calendar --source build
 ```

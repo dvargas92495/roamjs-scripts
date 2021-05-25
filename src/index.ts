@@ -15,6 +15,7 @@ import mime from "mime-types";
 import JSZip from "jszip";
 import crypto from "crypto";
 import rimraf from "rimraf";
+import TerserWebpackPlugin from 'terser-webpack-plugin';
 
 const lambda = new AWS.Lambda({
   apiVersion: "2015-03-31",
@@ -33,6 +34,19 @@ const getDotEnvPlugin = () => {
     )
   );
 };
+
+const optimization: webpack.Configuration['optimization'] = {
+  minimizer: [
+    new TerserWebpackPlugin({
+      // Terser Webpack Plugin now depends on jest-worker which uses dynamic path resolution here:
+      // https://github.com/facebook/jest/blob/master/packages/jest-worker/src/workers/NodeThreadsWorker.ts#L62
+      // This seems to not be handled by vercel/ncc:
+      // https://github.com/vercel/ncc/issues/489
+      // This prevents any worker initialization, preventing the MODULE_NOT_FOUND error. but is also slower :/
+      parallel: false,
+    })
+  ]
+}
 
 const getBaseConfig = (): Promise<
   Required<
@@ -184,6 +198,7 @@ const build = (): Promise<number> => {
           {
             ...baseConfig,
             mode: "production",
+            optimization,
             performance: {
               hints: "error",
               maxEntrypointSize: 5000000,
@@ -373,7 +388,7 @@ ${projectDescription}
           recursive: true,
         });
         return fs.writeFileSync(
-          path.join(root, "main.yaml"),
+          path.join(root, ".github", "workflows", "main.yaml"),
           `name: Publish Extension
 on:
   push:
@@ -410,7 +425,7 @@ jobs:
           recursive: true,
         });
         return fs.writeFileSync(
-          path.join(root, "main.yaml"),
+          path.join(root, ".github", "workflows", "main.yaml"),
           `name: Publish Lambda
 on:
   push:
@@ -461,27 +476,27 @@ out
         return fs.writeFileSync(
           path.join(root, "LICENSE"),
           `MIT License
-  
-  Copyright (c) ${new Date().getFullYear()} ${getName()}
-  
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-  
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-  
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
-  `
+
+Copyright (c) ${new Date().getFullYear()} ${getName()}
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`
         );
       },
       skip: () => extensionExists,
@@ -499,7 +514,7 @@ out
           ];
           const child = spawn(
             "npm",
-            ["install", "--save-dev"].concat(dependencies),
+            ["install", "--save-dev", "--quiet"].concat(dependencies),
             {
               stdio: "inherit",
             }
@@ -523,7 +538,7 @@ out
           const dependencies = ["aws-lambda"];
           const child = spawn(
             "npm",
-            ["install", "--save-dev"].concat(dependencies),
+            ["install", "--save-dev", "--quiet"].concat(dependencies),
             {
               stdio: "inherit",
             }
@@ -552,7 +567,7 @@ out
             "roam-client",
             "roamjs-components",
           ];
-          const child = spawn("npm", ["install"].concat(dependencies), {
+          const child = spawn("npm", ["install", "--quiet"].concat(dependencies), {
             stdio: "inherit",
           });
           child.on("close", (code) => {
@@ -572,7 +587,11 @@ out
         fs.mkdirSync(path.join(root, "src"));
         return fs.writeFileSync(
           path.join(root, "src", "index.ts"),
-          `const CONFIG = \`roam/js/${projectName}\`;`
+          `import { toConfig, createPage } from "roam-client";
+
+const CONFIG = toConfig("${projectName}");
+createPage({ title: CONFIG });
+`
         );
       },
       skip: () => extensionExists,
@@ -700,7 +719,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
               `https://api.github.com/repos/${user}/${name}/actions/secrets/public-key`,
               githubOpts
             )
-            .then(({ data: { key } }) => {
+            .then(({ data: { key, key_id } }) => {
               const keyBytes = Buffer.from(key, "base64");
               const encryptedBytes = sodium.seal(messageBytes, keyBytes);
               const encrypted_value = Buffer.from(encryptedBytes).toString(
@@ -710,7 +729,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
                 `https://api.github.com/repos/${user}/${name}/actions/secrets/${secretName}`,
                 {
                   encrypted_value,
-                  key_id: key,
+                  key_id,
                 },
                 githubOpts
               );
@@ -848,7 +867,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
       task: () => {
         process.chdir(root);
         return sync(
-          `git remote add origin "https:\\/\\/github.com\\/${user}\\/${name}.git"`,
+          `git remote add origin "https:\\\\/\\\\/github.com\\\\/${user}\\\\/${name}.git"`,
           { stdio: "ignore" }
         );
       },
@@ -898,6 +917,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         ),
         target: "node",
         mode: "production",
+        optimization,
         module: {
           rules: [
             {
