@@ -904,6 +904,7 @@ export const handler: APIGatewayProxyHandler = (event) => {
   return Promise.resolve(0);
 };
 
+const JS_FILE_REGEX = /\.js$/;
 const lambdas = async ({ build }: { build?: true }): Promise<number> => {
   await new Promise((resolve) => rimraf(appPath("out"), resolve));
   const config = (fs.existsSync(appPath("roamjs-config.json"))
@@ -971,6 +972,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         .readdirSync(appPath("out"), { withFileTypes: true })
         .filter((f) => !f.isDirectory())
         .map((f) => f.name)
+        .filter((f) => JS_FILE_REGEX.test(f))
         .map((f) => {
           const zip = new JSZip();
           console.log(`Zipping ${path.join(appPath("out"), f)}...`);
