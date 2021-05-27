@@ -1017,7 +1017,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
                               Buffer.concat(data).toString(),
                               () =>
                                 resolve(
-                                  `Would've uploaded ${f}, wrote zip to disk`
+                                  `Would've uploaded ${f}, wrote zip to disk. Lambda SHA ${l.Configuration?.CodeSha256}. Local SHA ${sha256}.`
                                 )
                             )
                           )
