@@ -977,13 +977,15 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
           const zip = new JSZip();
           console.log(`Zipping ${path.join(appPath("out"), f)}...`);
           const content = fs.readFileSync(path.join(appPath("out"), f));
-          zip.file(f, content);
+          zip.file(f, content, { date: new Date("09-24-1995") });
           const name = f.replace(/\.js$/, "");
           (config.extraFiles?.[name] || []).forEach((ff) => {
             console.log(
               `Zipping ${path.join(appPath("out"), ff)} as part of ${f}...`
             );
-            zip.file(ff, fs.readFileSync(path.join(appPath("out"), ff)));
+            zip.file(ff, fs.readFileSync(path.join(appPath("out"), ff)), {
+              date: new Date("09-24-1995"),
+            });
           });
           const shasum = crypto.createHash("sha256");
           const data: Uint8Array[] = [];
