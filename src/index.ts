@@ -679,7 +679,7 @@ module "roamjs_lambda" {
       task: () => {
         fs.mkdirSync(path.join(root, "lambdas"));
         return fs.writeFileSync(
-          path.join(root, "lambdas", "index.ts"),
+          path.join(root, "lambdas", `${projectName}_post.ts`),
           `import { APIGatewayProxyHandler } from "aws-lambda";
 
 export const handler: APIGatewayProxyHandler = (event) => {
@@ -782,6 +782,25 @@ export const handler: APIGatewayProxyHandler = (event) => {
       skip: () => extensionExists,
     },
     {
+      title: "Git remote",
+      task: () => {
+        process.chdir(root);
+        return sync(
+          `git remote add origin "https:\\\\/\\\\/github.com\\\\/${user}\\\\/${name}.git"`,
+          { stdio: "ignore" }
+        );
+      },
+      skip: () => !user || extensionExists,
+    },
+    {
+      title: "Git push",
+      task: () => {
+        process.chdir(root);
+        return sync(`git push origin main`, { stdio: "ignore" });
+      },
+      skip: () => !user || extensionExists,
+    },
+    {
       title: "Create Workspace",
       task: () => {
         const tfOpts = {
@@ -835,8 +854,8 @@ export const handler: APIGatewayProxyHandler = (event) => {
           .then((id) =>
             Promise.all(
               [
-                { key: "aws_access_token", env: "AWS_ACCESS_TOKEN" },
-                { key: "aws_secret_token", env: "AWS_SECRET_TOKEN" },
+                { key: "aws_access_token", env: "AWS_ACCESS_KEY_ID" },
+                { key: "aws_secret_token", env: "AWS_SECRET_ACCESS_KEY" },
                 { key: "developer_token", env: "ROAMJS_DEVELOPER_TOKEN" },
                 { key: "github_token", env: "GITHUB_TOKEN" },
               ].map(({ key, env }) =>
@@ -864,26 +883,9 @@ export const handler: APIGatewayProxyHandler = (event) => {
         !terraformOrganizationToken ||
         !user ||
         !process.env.ROAMJS_DEVELOPER_TOKEN ||
-        !process.env.GITHUB_TOKEN,
-    },
-    {
-      title: "Git remote",
-      task: () => {
-        process.chdir(root);
-        return sync(
-          `git remote add origin "https:\\\\/\\\\/github.com\\\\/${user}\\\\/${name}.git"`,
-          { stdio: "ignore" }
-        );
-      },
-      skip: () => !user || extensionExists,
-    },
-    {
-      title: "Git push",
-      task: () => {
-        process.chdir(root);
-        return sync(`git push origin main`, { stdio: "ignore" });
-      },
-      skip: () => !user || extensionExists,
+        !process.env.GITHUB_TOKEN ||
+        !process.env.AWS_ACCESS_KEY_ID ||
+        !process.env.AWS_SECRET_ACCESS_KEY,
     },
   ] as { title: string; task: () => Promise<void>; skip?: () => boolean }[];
   for (const task of tasks) {
