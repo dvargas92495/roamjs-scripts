@@ -425,7 +425,7 @@ jobs:
           recursive: true,
         });
         return fs.writeFileSync(
-          path.join(root, ".github", "workflows", "main.yaml"),
+          path.join(root, ".github", "workflows", "lambdas.yaml"),
           `name: Publish Lambda
 on:
   push:
