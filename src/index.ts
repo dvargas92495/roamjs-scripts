@@ -25,9 +25,12 @@ const lambda = new AWS.Lambda({
 const appPath = (p: string) => path.resolve(fs.realpathSync(process.cwd()), p);
 
 const getDotEnvPlugin = () => {
-  const env = fs.existsSync(".env.local")
-    ? dotenv.parse(fs.readFileSync(".env.local"))
-    : {};
+  const env = {
+    ...process.env,
+    ...(fs.existsSync(".env.local")
+      ? dotenv.parse(fs.readFileSync(".env.local"))
+      : {}),
+  };
   return new webpack.DefinePlugin(
     Object.fromEntries(
       Object.keys(env).map((k) => [`process.env.${k}`, JSON.stringify(env[k])])
@@ -535,7 +538,7 @@ SOFTWARE.
       task: () => {
         process.chdir(root);
         return new Promise<void>((resolve, reject) => {
-          const dependencies = ["aws-lambda"];
+          const dependencies = ["@types/aws-lambda"];
           const child = spawn(
             "npm",
             ["install", "--save-dev", "--quiet"].concat(dependencies),
