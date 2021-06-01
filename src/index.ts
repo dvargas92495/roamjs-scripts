@@ -16,6 +16,7 @@ import JSZip from "jszip";
 import crypto from "crypto";
 import rimraf from "rimraf";
 import TerserWebpackPlugin from "terser-webpack-plugin";
+import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
 
 const lambda = new AWS.Lambda({
   apiVersion: "2015-03-31",
@@ -163,7 +164,7 @@ const getBaseConfig = (): Promise<
         },
       ],
     },
-    plugins: [getDotEnvPlugin()],
+    plugins: [getDotEnvPlugin(), new NodePolyfillPlugin()],
   });
 };
 
@@ -685,7 +686,7 @@ module "roamjs_lambda" {
           path.join(root, "lambdas", `${projectName}_post.ts`),
           `import { APIGatewayProxyHandler } from "aws-lambda";
 
-export const handler: APIGatewayProxyHandler = (event) => {
+export const handler: APIGatewayProxyHandler = async () => {
   return {
     statusCode: 200,
     body: JSON.stringify({
@@ -696,7 +697,8 @@ export const handler: APIGatewayProxyHandler = (event) => {
       "Access-Control-Allow-Methods": "POST",
     },
   };
-}`
+}
+`
         );
       },
       skip: () => !backend,
@@ -967,7 +969,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
           __dirname: true,
         },
         externals: ["aws-sdk"],
-        plugins: [getDotEnvPlugin()],
+        plugins: [getDotEnvPlugin(), new NodePolyfillPlugin()],
       },
       webpackCallback(resolve, reject)
     );
