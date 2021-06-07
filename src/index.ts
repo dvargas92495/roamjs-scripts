@@ -52,6 +52,12 @@ const optimization: webpack.Configuration["optimization"] = {
   ],
 };
 
+const getPackageName = () =>
+  (fs.existsSync("package.json")
+    ? JSON.parse(fs.readFileSync("package.json").toString())?.name
+    : repoName.sync({ cwd: path.resolve(".") })
+  )?.replace(/^roamjs-/, "");
+
 const getBaseConfig = (): Promise<
   Required<
     Pick<
@@ -61,10 +67,7 @@ const getBaseConfig = (): Promise<
   >
 > => {
   const srcFiles = fs.readdirSync("./src/");
-
-  const name = fs.existsSync("package.json")
-    ? JSON.parse(fs.readFileSync("package.json").toString())?.name
-    : repoName.sync({ cwd: path.resolve(".") });
+  const name = getPackageName();
 
   const entryFile =
     srcFiles.find((s) => /index\.(t|j)s/.test(s)) ||
@@ -275,6 +278,7 @@ const init = async ({
   description?: string;
   user?: string;
   backend?: boolean;
+  repo?: string;
 }): Promise<number> => {
   if (!name) {
     return Promise.reject("--name parameter is required");
@@ -332,6 +336,7 @@ const init = async ({
           fs.readFileSync(path.join(root, "package.json")).toString()
         );
         packageJson.scripts.lambdas = "roamjs-scripts lambdas";
+        packageJson.scripts.server = "localhost-lambdas";
         return Promise.resolve(
           fs.writeFileSync(
             path.join(root, "package.json"),
@@ -401,6 +406,14 @@ on:
       - "src/**"
       - ".github/workflows/main.yaml"
 
+${
+  backend
+    ? `env:
+  API_URL: https://lambda.roamjs.com
+
+`
+    : ""
+}
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -469,6 +482,7 @@ jobs:
 build
 dist
 out
+.env.local
 `
         );
       },
@@ -539,7 +553,7 @@ SOFTWARE.
       task: () => {
         process.chdir(root);
         return new Promise<void>((resolve, reject) => {
-          const dependencies = ["@types/aws-lambda"];
+          const dependencies = ["@types/aws-lambda", "localhost-lambdas"];
           const child = spawn(
             "npm",
             ["install", "--save-dev", "--quiet"].concat(dependencies),
@@ -679,6 +693,19 @@ module "roamjs_lambda" {
       skip: () => !backend,
     },
     {
+      title: "Write .env.local",
+      task: () => {
+        return Promise.resolve(
+          fs.writeFileSync(
+            path.join(root, ".env.local"),
+            `API_URL=http://localhost:3003/dev
+`
+          )
+        );
+      },
+      skip: () => !backend,
+    },
+    {
       title: "Write lambdas",
       task: () => {
         fs.mkdirSync(path.join(root, "lambdas"));
@@ -707,8 +734,21 @@ export const handler: APIGatewayProxyHandler = async () => {
       title: "Create a github repo",
       task: () => {
         return axios
-          .post("https://api.github.com/user/repos", { name }, githubOpts)
-          .catch((e) => console.log("Failed to create repo", e.response?.data));
+          .get(`https://api.github.com/repos/${user}/${name}`)
+          .then(() => console.log("Repo already exists."))
+          .catch((e) =>
+            e.response?.status === 404
+              ? axios
+                  .post(
+                    "https://api.github.com/user/repos",
+                    { name },
+                    githubOpts
+                  )
+                  .catch((err) =>
+                    console.log("Failed to create repo", err.response?.data)
+                  )
+              : console.log("Failed to check repo", e.response?.data)
+          );
       },
       skip: () => !user || !process.env.GITHUB_TOKEN || extensionExists,
     },
@@ -1079,7 +1119,7 @@ const toDoubleDigit = (n: number) => n.toString().padStart(2, "0");
 const publish = async ({
   token,
   source,
-  path: destPathInput,
+  path: destPathInput = getPackageName(),
   logger: { info, warning } = { info: console.log, warning: console.warn },
 }: {
   token?: string;
