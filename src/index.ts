@@ -227,6 +227,7 @@ const dev = async ({ port: inputPort }: { port?: string }): Promise<number> => {
         baseConfig.module.rules?.push({
           test: /\.js$/,
           enforce: "pre",
+          exclude: /node_modules/,
           use: ["source-map-loader"],
         });
         baseConfig.output.publicPath = `http://localhost:${port}/`;
@@ -838,7 +839,7 @@ export const handler: APIGatewayProxyHandler = async () => {
               "remote",
               "add",
               "origin",
-              `"https:\\/\\/github.com\\/${user}\\/${repo}.git"`,
+              `https://github.com/${user}/${repo}.git`,
             ],
             {
               stdio: "inherit",
