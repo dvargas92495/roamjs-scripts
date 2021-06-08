@@ -766,7 +766,7 @@ export const handler: APIGatewayProxyHandler = async () => {
           const messageBytes = Buffer.from(secretValue);
           return axios
             .get(
-              `https://api.github.com/repos/${user}/${name}/actions/secrets/public-key`,
+              `https://api.github.com/repos/${user}/${repo}/actions/secrets/public-key`,
               githubOpts
             )
             .then(({ data: { key, key_id } }) => {
@@ -776,7 +776,7 @@ export const handler: APIGatewayProxyHandler = async () => {
                 "base64"
               );
               return axios.put(
-                `https://api.github.com/repos/${user}/${name}/actions/secrets/${secretName}`,
+                `https://api.github.com/repos/${user}/${repo}/actions/secrets/${secretName}`,
                 {
                   encrypted_value,
                   key_id,
@@ -831,10 +831,22 @@ export const handler: APIGatewayProxyHandler = async () => {
       title: "Git remote",
       task: () => {
         process.chdir(root);
-        return sync(
-          `git remote add origin "https:\\\\/\\\\/github.com\\\\/${user}\\\\/${name}.git"`,
-          { stdio: "ignore" }
-        );
+        return new Promise<void>((resolve, reject) => {
+          const child = spawn(
+            "git",
+            ["remote", "add", "origin", `"https:\\/\\/github.com\\/${user}\\/${repo}.git"`],
+            {
+              stdio: "inherit",
+            }
+          );
+          child.on("close", (code) => {
+            if (code !== 0) {
+              reject(code);
+              return;
+            }
+            resolve();
+          });
+        });
       },
       skip: () => !user || extensionExists,
     },
@@ -888,7 +900,7 @@ export const handler: APIGatewayProxyHandler = async () => {
                       "auto-apply": true,
                       "vcs-repo": {
                         "oauth-token-id": id,
-                        identifier: `${user}/${name}`,
+                        identifier: `${user}/${repo}`,
                       },
                     },
                   },
