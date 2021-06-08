@@ -273,6 +273,7 @@ const init = async ({
   description,
   user,
   backend,
+  repo = name,
 }: {
   name?: string;
   description?: string;
@@ -734,14 +735,14 @@ export const handler: APIGatewayProxyHandler = async () => {
       title: "Create a github repo",
       task: () => {
         return axios
-          .get(`https://api.github.com/repos/${user}/${name}`)
+          .get(`https://api.github.com/repos/${user}/${repo}`)
           .then(() => console.log("Repo already exists."))
           .catch((e) =>
             e.response?.status === 404
               ? axios
                   .post(
                     "https://api.github.com/user/repos",
-                    { name },
+                    { name: repo },
                     githubOpts
                   )
                   .catch((err) =>
