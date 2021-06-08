@@ -834,7 +834,12 @@ export const handler: APIGatewayProxyHandler = async () => {
         return new Promise<void>((resolve, reject) => {
           const child = spawn(
             "git",
-            ["remote", "add", "origin", `"https:\\/\\/github.com\\/${user}\\/${repo}.git"`],
+            [
+              "remote",
+              "add",
+              "origin",
+              `"https:\\/\\/github.com\\/${user}\\/${repo}.git"`,
+            ],
             {
               stdio: "inherit",
             }
