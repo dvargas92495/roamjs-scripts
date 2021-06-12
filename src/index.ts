@@ -17,6 +17,7 @@ import crypto from "crypto";
 import rimraf from "rimraf";
 import TerserWebpackPlugin from "terser-webpack-plugin";
 import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
+import "@babel/polyfill";
 
 const lambda = new AWS.Lambda({
   apiVersion: "2015-03-31",
@@ -79,7 +80,7 @@ const getBaseConfig = (): Promise<
   }
 
   return Promise.resolve({
-    entry: `./src/${entryFile}`,
+    entry: ["@babel/polyfill", `./src/${entryFile}`],
     target: "web",
     resolve: {
       modules: ["node_modules", appPath("node_modules")],
