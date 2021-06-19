@@ -612,10 +612,14 @@ SOFTWARE.
         fs.mkdirSync(path.join(root, "src"));
         return fs.writeFileSync(
           path.join(root, "src", "index.ts"),
-          `import { toConfig, createPage } from "roam-client";
+          `import { toConfig, runExtension } from "roam-client";
+import { createConfigObserver } from "roamjs-components";
 
-const CONFIG = toConfig("${projectName}");
-createPage({ title: CONFIG });
+const ID = "${projectName}";
+const CONFIG = toConfig(ID);
+runExtension(ID, () => {
+  createConfigObserver({ title: CONFIG, config: { tabs: [] } });
+});
 `
         );
       },
