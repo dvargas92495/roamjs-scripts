@@ -26,9 +26,12 @@ const lambda = new AWS.Lambda({
 
 const appPath = (p: string) => path.resolve(fs.realpathSync(process.cwd()), p);
 
+const IGNORE_ENV = ["HOME", "HOMEDRIVE", "HOMEPATH", "PATH", "PWD"];
 const getDotEnvPlugin = () => {
   const env = {
-    ...process.env,
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([k]) => !IGNORE_ENV.includes(k))
+    ),
     ...(fs.existsSync(".env.local")
       ? dotenv.parse(fs.readFileSync(".env.local"))
       : {}),
