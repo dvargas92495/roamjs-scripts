@@ -26,7 +26,7 @@ const lambda = new AWS.Lambda({
 
 const appPath = (p: string) => path.resolve(fs.realpathSync(process.cwd()), p);
 
-const IGNORE_ENV = ["HOME", "HOMEDRIVE", "HOMEPATH", "PATH", "PWD"];
+const IGNORE_ENV = ["HOME"];
 const getDotEnvPlugin = () => {
   const env = {
     ...Object.fromEntries(
