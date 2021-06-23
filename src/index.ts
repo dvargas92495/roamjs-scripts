@@ -173,9 +173,7 @@ const getBaseConfig = (): Promise<
     },
     plugins: [
       getDotEnvPlugin(),
-      new NodePolyfillPlugin({
-        excludeAliases: ["process"],
-      }),
+      new NodePolyfillPlugin(),
     ],
   });
 };
@@ -1045,9 +1043,8 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         externals: ["aws-sdk"],
         plugins: [
           getDotEnvPlugin(),
-          new NodePolyfillPlugin(),
-          new webpack.ProvidePlugin({
-            process: "process/browser",
+          new NodePolyfillPlugin({
+            excludeAliases: ["process"],
           }),
         ],
       },
