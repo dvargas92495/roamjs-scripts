@@ -18,7 +18,6 @@ import rimraf from "rimraf";
 import TerserWebpackPlugin from "terser-webpack-plugin";
 import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
 import "@babel/polyfill";
-import "process/browser";
 
 const lambda = new AWS.Lambda({
   apiVersion: "2015-03-31",
@@ -172,7 +171,12 @@ const getBaseConfig = (): Promise<
         },
       ],
     },
-    plugins: [getDotEnvPlugin(), new NodePolyfillPlugin()],
+    plugins: [
+      getDotEnvPlugin(),
+      new NodePolyfillPlugin({
+        excludeAliases: ["process"],
+      }),
+    ],
   });
 };
 
