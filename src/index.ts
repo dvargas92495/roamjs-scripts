@@ -171,10 +171,7 @@ const getBaseConfig = (): Promise<
         },
       ],
     },
-    plugins: [
-      getDotEnvPlugin(),
-      new NodePolyfillPlugin(),
-    ],
+    plugins: [getDotEnvPlugin(), new NodePolyfillPlugin()],
   });
 };
 
