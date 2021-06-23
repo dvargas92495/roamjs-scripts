@@ -1030,12 +1030,21 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         },
         resolve: {
           extensions: [".ts", ".js"],
+          alias: {
+            process: "process/browser",
+          },
         },
         node: {
           __dirname: true,
         },
         externals: ["aws-sdk"],
-        plugins: [getDotEnvPlugin(), new NodePolyfillPlugin()],
+        plugins: [
+          getDotEnvPlugin(),
+          new NodePolyfillPlugin(),
+          new webpack.ProvidePlugin({
+            process: "process/browser",
+          }),
+        ],
       },
       webpackCallback(resolve, reject)
     );
