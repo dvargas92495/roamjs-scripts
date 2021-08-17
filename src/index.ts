@@ -980,9 +980,6 @@ export const handler: APIGatewayProxyHandler = async () => {
 const JS_FILE_REGEX = /\.js$/;
 const lambdas = async ({ build }: { build?: true }): Promise<number> => {
   await new Promise((resolve) => rimraf(appPath("out"), resolve));
-  const config = (fs.existsSync(appPath("roamjs-config.json"))
-    ? JSON.parse(fs.readFileSync(appPath("roamjs-config.json")).toString())
-    : {}) as { extraFiles?: { [name: string]: string[] } };
   return new Promise<number>((resolve, reject) => {
     webpack(
       {
@@ -1070,12 +1067,6 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
           const content = fs.readFileSync(path.join(appPath("out"), f));
           zip.file(f, content, { date: new Date("09-24-1995") });
           const name = f.replace(/\.js$/, "");
-          (config.extraFiles?.[name] || []).forEach((ff) => {
-            console.log(`Zipping ${ff} as part of ${f}...`);
-            zip.file(ff, fs.readFileSync(ff), {
-              date: new Date("09-24-1995"),
-            });
-          });
           const shasum = crypto.createHash("sha256");
           const data: Uint8Array[] = [];
           return new Promise<void>((resolve) =>
@@ -1086,7 +1077,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
                 shasum.update(d);
               })
               .on("end", () => {
-                console.log(`Zip of ${name} complete.`);
+                console.log(`Zip of ${name} complete (${data.length}).`);
                 const sha256 = shasum.digest("base64");
                 const FunctionName = `RoamJS_${name}`;
                 lambda
