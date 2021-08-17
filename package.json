@@ -36,7 +36,6 @@
     "@types/rimraf": "^3.0.0",
     "@types/terser-webpack-plugin": "^5.0.3",
     "@types/webpack-dev-server": "^3.11.3",
-    "@types/webpack-node-externals": "^2.5.2",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
     "@vercel/ncc": "^0.28.5",
@@ -76,7 +75,6 @@
     "tweetsodium": "0.0.5",
     "url-loader": "^4.1.1",
     "webpack": "^5.37.1",
-    "webpack-dev-server": "^3.11.2",
-    "webpack-node-externals": "^3.0.0"
+    "webpack-dev-server": "^3.11.2"
   }
 }
