@@ -1066,9 +1066,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
           zip.file(f, content, { date: new Date("09-24-1995") });
           const name = f.replace(/\.js$/, "");
           (config.extraFiles?.[name] || []).forEach((ff) => {
-            console.log(
-              `Zipping ${ff} as part of ${f}...`
-            );
+            console.log(`Zipping ${ff} as part of ${f}...`);
             zip.file(ff, fs.readFileSync(ff), {
               date: new Date("09-24-1995"),
             });
