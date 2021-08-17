@@ -1044,10 +1044,10 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
           new NodePolyfillPlugin({
             excludeAliases: ["process"],
           }),
-          new webpack.IgnorePlugin({
+          /*new webpack.IgnorePlugin({
             resourceRegExp: /canvas/m,
             contextRegExp: /jsdom$/,
-          }),
+          }),*/
         ],
       },
       webpackCallback(resolve, reject)
@@ -1067,9 +1067,9 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
           const name = f.replace(/\.js$/, "");
           (config.extraFiles?.[name] || []).forEach((ff) => {
             console.log(
-              `Zipping ${path.join(appPath("out"), ff)} as part of ${f}...`
+              `Zipping ${ff} as part of ${f}...`
             );
-            zip.file(ff, fs.readFileSync(path.join(appPath("out"), ff)), {
+            zip.file(ff, fs.readFileSync(ff), {
               date: new Date("09-24-1995"),
             });
           });
