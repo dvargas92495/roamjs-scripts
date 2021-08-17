@@ -17,6 +17,7 @@ import crypto from "crypto";
 import rimraf from "rimraf";
 import TerserWebpackPlugin from "terser-webpack-plugin";
 import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
+import nodeExternals from "webpack-node-externals";
 import "@babel/polyfill";
 
 const lambda = new AWS.Lambda({
@@ -1037,11 +1038,15 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         node: {
           __dirname: true,
         },
-        externals: ["aws-sdk"],
+        externals: ["aws-sdk", nodeExternals()],
         plugins: [
           getDotEnvPlugin(),
           new NodePolyfillPlugin({
             excludeAliases: ["process"],
+          }),
+          new webpack.IgnorePlugin({
+            resourceRegExp: /canvas/m,
+            contextRegExp: /jsdom$/,
           }),
         ],
       },

@@ -62,7 +62,7 @@
     "file-loader": "^6.2.0",
     "git-repo-name": "^1.0.1",
     "git-user-name": "^2.0.0",
-    "jszip": "^3.6.0",
+    "jszip": "^3.7.1",
     "mime-types": "^2.1.30",
     "nearley-loader": "^2.0.0",
     "node-polyfill-webpack-plugin": "^1.1.2",
@@ -75,6 +75,7 @@
     "tweetsodium": "0.0.5",
     "url-loader": "^4.1.1",
     "webpack": "^5.37.1",
-    "webpack-dev-server": "^3.11.2"
+    "webpack-dev-server": "^3.11.2",
+    "webpack-node-externals": "^3.0.0"
   }
 }
