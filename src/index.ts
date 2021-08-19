@@ -147,7 +147,7 @@ const getBaseConfig = (): Promise<
           ],
         },
         {
-          test: /\.(png|jpe?g|gif)$/i,
+          test: /\.(png|jpe?g|gif|cur)$/i,
           use: [
             {
               loader: "file-loader",
