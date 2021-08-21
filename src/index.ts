@@ -1000,6 +1000,7 @@ const lambdas = async ({
           entryPoints,
           bundle: true,
           outdir: appPath("out"),
+          platform: "node",
         })
       : webpack(
           {
