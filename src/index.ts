@@ -1010,9 +1010,7 @@ const lambdas = async ({
 
               contents = contents.replace(
                 'const syncWorkerFile = require.resolve ? require.resolve("./xhr-sync-worker.js") : null;',
-                `const syncWorkerFile = "${require.resolve(
-                  "jsdom/lib/jsdom/living/xhr/xhr-sync-worker.js"
-                )}";`
+                `const syncWorkerFile = null;`
               );
 
               return { contents, loader: "js" };
@@ -1020,15 +1018,22 @@ const lambdas = async ({
           );
         },
       };
-      return esbuild.build({
-        entryPoints,
-        bundle: true,
-        outdir: appPath("out"),
-        platform: "node",
-        external: ["canvas"],
-        minify: true,
-        plugins: [jsdomPatch],
-      });
+      return esbuild
+        .build({
+          entryPoints,
+          bundle: true,
+          outdir: appPath("out"),
+          platform: "node",
+          external: ["canvas"],
+          minify: true,
+          plugins: [jsdomPatch],
+        })
+        .then((r) =>
+          r.errors.length
+            ? reject(JSON.stringify(r.errors))
+            : resolve(r.errors.length)
+        )
+        .catch(reject);
     } else {
       return webpack(
         {
