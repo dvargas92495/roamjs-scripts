@@ -1005,7 +1005,7 @@ const lambdas = async ({
       const jsdomPatch: esbuild.Plugin = {
         name: "jsdom-patch",
         setup: (build) => {
-          build.onResolve({ filter: /XMLHttpRequest-impl\.js/ }, (args) => {
+          build.onResolve({ filter: /xhr-sync-worker\.js/ }, (args) => {
             return { path: args.path, external: true };
           });
         },
