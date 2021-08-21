@@ -1035,7 +1035,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
           filename: "[name].js",
         },
         resolve: {
-          extensions: [".ts", ".js"],
+          extensions: [".ts", ".js", ".tsx"],
           alias: {
             process: "process/browser",
           },
