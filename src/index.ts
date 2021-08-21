@@ -1005,15 +1005,15 @@ const lambdas = async ({
       const jsdomPatch: esbuild.Plugin = {
         name: "jsdom-patch",
         setup: (build) => {
-          build.onLoad({ filter: /XMLHttpRequest-impl\.js$/ }, async args => {
-            let contents = await fs.promises.readFile(args.path, 'utf8');
-      
+          build.onLoad({ filter: /XMLHttpRequest-impl\.js$/ }, async (args) => {
+            let contents = await fs.promises.readFile(args.path, "utf8");
+
             contents = contents.replace(
               'const syncWorkerFile = require.resolve ? require.resolve("./xhr-sync-worker.js") : null;',
-              `const syncWorkerFile = null;`,
+              `const syncWorkerFile = null;`
             );
-      
-            return { contents, loader: 'js' };
+
+            return { contents, loader: "js" };
           });
         },
       };
