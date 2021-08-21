@@ -987,97 +987,126 @@ const lambdas = async ({
   fast?: true;
 }): Promise<number> => {
   await new Promise((resolve) => rimraf(appPath("out"), resolve));
-  const entryPoints = Object.fromEntries(
-    fs
-      .readdirSync("./lambdas/", { withFileTypes: true })
-      .filter((f) => !f.isDirectory())
-      .map((f) => f.name)
-      .map((f) => [f.replace(/\.[t|j]s$/, ""), `./lambdas/${f}`])
-  );
   return new Promise<number>((resolve, reject) => {
-    fast
-      ? esbuild.build({
-          entryPoints,
-          bundle: true,
-          outdir: appPath("out"),
-          platform: "node",
-        })
-      : webpack(
-          {
-            entry: entryPoints,
-            target: "node",
-            mode: "production",
-            optimization,
-            module: {
-              rules: [
-                {
-                  test: /\.tsx?$/,
-                  use: [
-                    {
-                      loader: "babel-loader",
-                      options: {
-                        cacheDirectory: true,
-                        cacheCompression: false,
-                        presets: ["@babel/preset-env", "@babel/preset-react"],
-                      },
-                    },
-                    {
-                      loader: "ts-loader",
-                      options: {
-                        transpileOnly: true,
-                      },
-                    },
-                  ],
-                  exclude: /node_modules/,
-                },
-                {
-                  test: /\.br$/,
-                  use: [
-                    {
-                      loader: "file-loader",
-                      options: {
-                        name: "[path][name].[ext]",
-                      },
-                    },
-                  ],
-                },
-                { test: /\.js\.map$/, loader: "ignore-loader" },
-              ],
-            },
-            output: {
-              libraryTarget: "umd",
-              path: path.resolve("out"),
-              filename: "[name].js",
-            },
-            resolve: {
-              extensions: [".ts", ".js", ".tsx"],
-              alias: {
-                process: "process/browser",
-              },
-            },
-            node: {
-              __dirname: true,
-            },
-            externals: [
-              "aws-sdk",
+    const entryPoints = Object.fromEntries(
+      fs
+        .readdirSync("./lambdas/", { withFileTypes: true })
+        .filter((f) => !f.isDirectory())
+        .map((f) => f.name)
+        .map((f) => [f.replace(/\.[t|j]s$/, ""), `./lambdas/${f}`])
+    );
+    if (fast) {
+      process.env.ESBUILD_BINARY_PATH =
+        process.platform === "win32"
+          ? appPath("node_modules/esbuild/esbuild.exe")
+          : appPath("node_modules/esbuild/bin/esbuild");
+      const jsdomPatch: esbuild.Plugin = {
+        name: "jsdom-patch",
+        setup: (build) => {
+          build.onLoad(
+            { filter: /jsdom\/living\/xhr\/XMLHttpRequest-impl\.js$/ },
+            async (args) => {
+              let contents = await fs.promises.readFile(args.path, "utf8");
+
+              contents = contents.replace(
+                'const syncWorkerFile = require.resolve ? require.resolve("./xhr-sync-worker.js") : null;',
+                `const syncWorkerFile = "${require.resolve(
+                  "jsdom/lib/jsdom/living/xhr/xhr-sync-worker.js"
+                )}";`
+              );
+
+              return { contents, loader: "js" };
+            }
+          );
+        },
+      };
+      return esbuild.build({
+        entryPoints,
+        bundle: true,
+        outdir: appPath("out"),
+        platform: "node",
+        external: ["canvas"],
+        minify: true,
+        plugins: [jsdomPatch],
+      });
+    } else {
+      return webpack(
+        {
+          entry: entryPoints,
+          target: "node",
+          mode: "production",
+          optimization,
+          module: {
+            rules: [
               {
-                "utf-8-validate": "commonjs utf-8-validate",
-                bufferutil: "commonjs bufferutil",
+                test: /\.tsx?$/,
+                use: [
+                  {
+                    loader: "babel-loader",
+                    options: {
+                      cacheDirectory: true,
+                      cacheCompression: false,
+                      presets: ["@babel/preset-env", "@babel/preset-react"],
+                    },
+                  },
+                  {
+                    loader: "ts-loader",
+                    options: {
+                      transpileOnly: true,
+                    },
+                  },
+                ],
+                exclude: /node_modules/,
               },
-            ],
-            plugins: [
-              getDotEnvPlugin(),
-              new NodePolyfillPlugin({
-                excludeAliases: ["process"],
-              }),
-              new webpack.IgnorePlugin({
-                resourceRegExp: /canvas/m,
-                contextRegExp: /jsdom$/,
-              }),
+              {
+                test: /\.br$/,
+                use: [
+                  {
+                    loader: "file-loader",
+                    options: {
+                      name: "[path][name].[ext]",
+                    },
+                  },
+                ],
+              },
+              { test: /\.js\.map$/, loader: "ignore-loader" },
             ],
           },
-          webpackCallback(resolve, reject)
-        );
+          output: {
+            libraryTarget: "umd",
+            path: path.resolve("out"),
+            filename: "[name].js",
+          },
+          resolve: {
+            extensions: [".ts", ".js", ".tsx"],
+            alias: {
+              process: "process/browser",
+            },
+          },
+          node: {
+            __dirname: true,
+          },
+          externals: [
+            "aws-sdk",
+            {
+              "utf-8-validate": "commonjs utf-8-validate",
+              bufferutil: "commonjs bufferutil",
+            },
+          ],
+          plugins: [
+            getDotEnvPlugin(),
+            new NodePolyfillPlugin({
+              excludeAliases: ["process"],
+            }),
+            new webpack.IgnorePlugin({
+              resourceRegExp: /canvas/m,
+              contextRegExp: /jsdom$/,
+            }),
+          ],
+        },
+        webpackCallback(resolve, reject)
+      );
+    }
   }).then((code) => {
     return Promise.all(
       fs
