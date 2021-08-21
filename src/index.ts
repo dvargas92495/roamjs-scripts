@@ -28,7 +28,7 @@ const lambda = new AWS.Lambda({
 const appPath = (p: string) => path.resolve(fs.realpathSync(process.cwd()), p);
 
 const IGNORE_ENV = ["HOME"];
-const getDotEnvPlugin = () => {
+const getDotEnvObject = () => {
   const env = {
     ...Object.fromEntries(
       Object.entries(process.env).filter(([k]) => !IGNORE_ENV.includes(k))
@@ -37,12 +37,12 @@ const getDotEnvPlugin = () => {
       ? dotenv.parse(fs.readFileSync(".env.local"))
       : {}),
   };
-  return new webpack.DefinePlugin(
-    Object.fromEntries(
-      Object.keys(env).map((k) => [`process.env.${k}`, JSON.stringify(env[k])])
-    )
+  return Object.fromEntries(
+    Object.keys(env).map((k) => [`process.env.${k}`, JSON.stringify(env[k])])
   );
 };
+
+const getDotEnvPlugin = () => new webpack.DefinePlugin(getDotEnvObject());
 
 const optimization: webpack.Configuration["optimization"] = {
   minimizer: [
@@ -1003,7 +1003,7 @@ const lambdas = async ({
       const jsdomPatch: esbuild.Plugin = {
         name: "jsdom-patch",
         setup: (build) => {
-          build.onLoad(
+          /*build.onLoad(
             { filter: /jsdom\/living\/xhr\/XMLHttpRequest-impl\.js/ },
             async (args) => {
               let contents = await fs.promises.readFile(args.path, "utf8");
@@ -1015,7 +1015,11 @@ const lambdas = async ({
 
               return { contents, loader: "js" };
             }
-          );
+          );*/
+          // Mark all paths starting with "http://" or "https://" as external
+          build.onResolve({ filter: /XMLHttpRequest-impl\.js/ }, (args) => {
+            return { path: args.path, external: true };
+          });
         },
       };
       return esbuild
@@ -1027,6 +1031,7 @@ const lambdas = async ({
           external: ["aws-sdk", "canvas"],
           minify: true,
           plugins: [jsdomPatch],
+          define: getDotEnvObject(),
         })
         .then((r) =>
           r.errors.length
