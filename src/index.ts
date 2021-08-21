@@ -996,8 +996,16 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         module: {
           rules: [
             {
-              test: /\.ts$/,
+              test: /\.tsx?$/,
               use: [
+                {
+                  loader: "babel-loader",
+                  options: {
+                    cacheDirectory: true,
+                    cacheCompression: false,
+                    presets: ["@babel/preset-env", "@babel/preset-react"],
+                  },
+                },
                 {
                   loader: "ts-loader",
                   options: {
@@ -1018,6 +1026,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
                 },
               ],
             },
+            { test: /\.js\.map$/, loader: "ignore-loader" },
           ],
         },
         output: {
