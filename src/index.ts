@@ -18,6 +18,7 @@ import rimraf from "rimraf";
 import TerserWebpackPlugin from "terser-webpack-plugin";
 import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
 import "@babel/polyfill";
+import esbuild from "esbuild";
 
 const lambda = new AWS.Lambda({
   apiVersion: "2015-03-31",
@@ -978,91 +979,104 @@ export const handler: APIGatewayProxyHandler = async () => {
 };
 
 const JS_FILE_REGEX = /\.js$/;
-const lambdas = async ({ build }: { build?: true }): Promise<number> => {
+const lambdas = async ({
+  build,
+  fast,
+}: {
+  build?: true;
+  fast?: true;
+}): Promise<number> => {
   await new Promise((resolve) => rimraf(appPath("out"), resolve));
+  const entryPoints = Object.fromEntries(
+    fs
+      .readdirSync("./lambdas/", { withFileTypes: true })
+      .filter((f) => !f.isDirectory())
+      .map((f) => f.name)
+      .map((f) => [f.replace(/\.[t|j]s$/, ""), `./lambdas/${f}`])
+  );
   return new Promise<number>((resolve, reject) => {
-    webpack(
-      {
-        entry: Object.fromEntries(
-          fs
-            .readdirSync("./lambdas/", { withFileTypes: true })
-            .filter((f) => !f.isDirectory())
-            .map((f) => f.name)
-            .map((f) => [f.replace(/\.[t|j]s$/, ""), `./lambdas/${f}`])
-        ),
-        target: "node",
-        mode: "production",
-        optimization,
-        module: {
-          rules: [
-            {
-              test: /\.tsx?$/,
-              use: [
-                {
-                  loader: "babel-loader",
-                  options: {
-                    cacheDirectory: true,
-                    cacheCompression: false,
-                    presets: ["@babel/preset-env", "@babel/preset-react"],
-                  },
-                },
-                {
-                  loader: "ts-loader",
-                  options: {
-                    transpileOnly: true,
-                  },
-                },
-              ],
-              exclude: /node_modules/,
-            },
-            {
-              test: /\.br$/,
-              use: [
-                {
-                  loader: "file-loader",
-                  options: {
-                    name: "[path][name].[ext]",
-                  },
-                },
-              ],
-            },
-            { test: /\.js\.map$/, loader: "ignore-loader" },
-          ],
-        },
-        output: {
-          libraryTarget: "umd",
-          path: path.resolve("out"),
-          filename: "[name].js",
-        },
-        resolve: {
-          extensions: [".ts", ".js", ".tsx"],
-          alias: {
-            process: "process/browser",
-          },
-        },
-        node: {
-          __dirname: true,
-        },
-        externals: [
-          "aws-sdk",
+    fast
+      ? esbuild.build({
+          entryPoints,
+          bundle: true,
+          outdir: appPath("out"),
+        })
+      : webpack(
           {
-            "utf-8-validate": "commonjs utf-8-validate",
-            bufferutil: "commonjs bufferutil",
+            entry: entryPoints,
+            target: "node",
+            mode: "production",
+            optimization,
+            module: {
+              rules: [
+                {
+                  test: /\.tsx?$/,
+                  use: [
+                    {
+                      loader: "babel-loader",
+                      options: {
+                        cacheDirectory: true,
+                        cacheCompression: false,
+                        presets: ["@babel/preset-env", "@babel/preset-react"],
+                      },
+                    },
+                    {
+                      loader: "ts-loader",
+                      options: {
+                        transpileOnly: true,
+                      },
+                    },
+                  ],
+                  exclude: /node_modules/,
+                },
+                {
+                  test: /\.br$/,
+                  use: [
+                    {
+                      loader: "file-loader",
+                      options: {
+                        name: "[path][name].[ext]",
+                      },
+                    },
+                  ],
+                },
+                { test: /\.js\.map$/, loader: "ignore-loader" },
+              ],
+            },
+            output: {
+              libraryTarget: "umd",
+              path: path.resolve("out"),
+              filename: "[name].js",
+            },
+            resolve: {
+              extensions: [".ts", ".js", ".tsx"],
+              alias: {
+                process: "process/browser",
+              },
+            },
+            node: {
+              __dirname: true,
+            },
+            externals: [
+              "aws-sdk",
+              {
+                "utf-8-validate": "commonjs utf-8-validate",
+                bufferutil: "commonjs bufferutil",
+              },
+            ],
+            plugins: [
+              getDotEnvPlugin(),
+              new NodePolyfillPlugin({
+                excludeAliases: ["process"],
+              }),
+              new webpack.IgnorePlugin({
+                resourceRegExp: /canvas/m,
+                contextRegExp: /jsdom$/,
+              }),
+            ],
           },
-        ],
-        plugins: [
-          getDotEnvPlugin(),
-          new NodePolyfillPlugin({
-            excludeAliases: ["process"],
-          }),
-          new webpack.IgnorePlugin({
-            resourceRegExp: /canvas/m,
-            contextRegExp: /jsdom$/,
-          }),
-        ],
-      },
-      webpackCallback(resolve, reject)
-    );
+          webpackCallback(resolve, reject)
+        );
   }).then((code) => {
     return Promise.all(
       fs
