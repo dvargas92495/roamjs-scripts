@@ -31,7 +31,9 @@ const IGNORE_ENV = ["HOME"];
 const getDotEnvObject = () => {
   const env = {
     ...Object.fromEntries(
-      Object.entries(process.env).filter(([k]) => !IGNORE_ENV.includes(k))
+      Object.entries(process.env)
+        .filter(([k]) => !/[()]/.test(k))
+        .filter(([k]) => !IGNORE_ENV.includes(k))
     ),
     ...(fs.existsSync(".env.local")
       ? dotenv.parse(fs.readFileSync(".env.local"))
