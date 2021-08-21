@@ -1018,7 +1018,7 @@ const lambdas = async ({
           minify: true,
           plugins: [jsdomPatch],
           define: getDotEnvObject(),
-          target: 'node12',
+          target: "node12",
         })
         .then((r) =>
           r.errors.length
