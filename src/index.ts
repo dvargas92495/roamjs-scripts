@@ -1004,7 +1004,7 @@ const lambdas = async ({
         name: "jsdom-patch",
         setup: (build) => {
           build.onLoad(
-            { filter: /jsdom\/living\/xhr\/XMLHttpRequest-impl\.js$/ },
+            { filter: /jsdom\/living\/xhr\/XMLHttpRequest-impl\.js/ },
             async (args) => {
               let contents = await fs.promises.readFile(args.path, "utf8");
 
@@ -1024,7 +1024,7 @@ const lambdas = async ({
           bundle: true,
           outdir: appPath("out"),
           platform: "node",
-          external: ["canvas"],
+          external: ["aws-sdk", "canvas"],
           minify: true,
           plugins: [jsdomPatch],
         })
