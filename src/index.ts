@@ -1003,20 +1003,6 @@ const lambdas = async ({
       const jsdomPatch: esbuild.Plugin = {
         name: "jsdom-patch",
         setup: (build) => {
-          /*build.onLoad(
-            { filter: /jsdom\/living\/xhr\/XMLHttpRequest-impl\.js/ },
-            async (args) => {
-              let contents = await fs.promises.readFile(args.path, "utf8");
-
-              contents = contents.replace(
-                'const syncWorkerFile = require.resolve ? require.resolve("./xhr-sync-worker.js") : null;',
-                `const syncWorkerFile = null;`
-              );
-
-              return { contents, loader: "js" };
-            }
-          );*/
-          // Mark all paths starting with "http://" or "https://" as external
           build.onResolve({ filter: /XMLHttpRequest-impl\.js/ }, (args) => {
             return { path: args.path, external: true };
           });
@@ -1032,6 +1018,7 @@ const lambdas = async ({
           minify: true,
           plugins: [jsdomPatch],
           define: getDotEnvObject(),
+          target: 'node12',
         })
         .then((r) =>
           r.errors.length
