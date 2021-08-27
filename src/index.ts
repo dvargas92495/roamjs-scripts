@@ -226,8 +226,15 @@ const build = (): Promise<number> => {
   });
 };
 
-const dev = async ({ port: inputPort }: { port?: string }): Promise<number> => {
+const dev = async ({
+  host: inputHost,
+  port: inputPort,
+}: {
+  host?: string;
+  port?: string;
+}): Promise<number> => {
   const port = Number(inputPort) || 8000;
+  const host = inputHost || "127.0.0.1";
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
@@ -237,7 +244,12 @@ const dev = async ({ port: inputPort }: { port?: string }): Promise<number> => {
           exclude: /node_modules/,
           use: ["source-map-loader"],
         });
-        baseConfig.output.publicPath = `http://localhost:${port}/`;
+        let hostOutput = host;
+        if (["127.0.0.1", "0.0.0.0"].includes(host)) {
+          // Don't try to show links with 0.0.0.0
+          hostOutput = "localhost";
+        }
+        baseConfig.output.publicPath = `http://${hostOutput}:${port}/`;
         baseConfig.output.pathinfo = true;
         const compiler = webpack({
           ...baseConfig,
@@ -250,9 +262,9 @@ const dev = async ({ port: inputPort }: { port?: string }): Promise<number> => {
         });
         const server = new webpackDevServer(compiler, {
           contentBase: appPath("build"),
-          host: "127.0.0.1",
+          host: host,
           disableHostCheck: true,
-          publicPath: `http://localhost:${port}/`,
+          publicPath: `http://${hostOutput}:${port}/`,
           headers: {
             "Access-Control-Allow-Origin": "https://roamresearch.com",
           },
@@ -262,11 +274,11 @@ const dev = async ({ port: inputPort }: { port?: string }): Promise<number> => {
           inline: false,
         });
 
-        server.listen(port, "localhost", function (err) {
+        server.listen(port, host, function (err) {
           if (err) {
             reject(err);
           } else {
-            console.log("WebpackDevServer listening at localhost:", port);
+            console.log(`WebpackDevServer listening at ${hostOutput}:${port}`);
             resolve(-1);
           }
         });
