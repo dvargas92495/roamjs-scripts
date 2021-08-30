@@ -229,9 +229,11 @@ const build = (): Promise<number> => {
 const dev = async ({
   host: inputHost,
   port: inputPort,
+  hot: hotReloading = false,
 }: {
   host?: string;
   port?: string;
+  hot?: boolean;
 }): Promise<number> => {
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
@@ -270,7 +272,7 @@ const dev = async ({
           },
           clientLogLevel: "none",
           injectClient: false,
-          hot: false,
+          hot: hotReloading,
           inline: false,
         });
 
