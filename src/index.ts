@@ -1012,10 +1012,6 @@ const lambdas = async ({
         .map((f) => [f.replace(/\.[t|j]s$/, ""), `./lambdas/${f}`])
     );
     if (fast) {
-      process.env.ESBUILD_BINARY_PATH =
-        process.platform === "win32"
-          ? appPath("node_modules/esbuild/esbuild.exe")
-          : appPath("node_modules/esbuild/bin/esbuild");
       const jsdomPatch: esbuild.Plugin = {
         name: "jsdom-patch",
         setup: (build) => {

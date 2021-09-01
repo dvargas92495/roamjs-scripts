@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "prebuild": "cross-env NODE_ENV=test npm t",
-    "build": "esbuild src/index.ts --outfile=dist/index.js --bundle --platform=node --external:emitter --external:pnpapi --external:watchpack --external:webpack-dev-server --external:terser-webpack-plugin",
+    "build": "esbuild src/index.ts --outfile=dist/index.js --bundle --platform=node --external:emitter --external:pnpapi --external:watchpack --external:webpack-dev-server --external:terser-webpack-plugin --external:esbuild",
     "postbuild": "node postbuild.js",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint . --ext .ts",
