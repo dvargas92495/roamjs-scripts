@@ -476,6 +476,7 @@ on:
 env:
   AWS_ACCESS_KEY_ID: \${{ secrets.DEPLOY_AWS_ACCESS_KEY }}
   AWS_SECRET_ACCESS_KEY: \${{ secrets.DEPLOY_AWS_ACCESS_SECRET }}
+  ROAMJS_DEVELOPER_TOKEN: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
 
 jobs:
   deploy:
@@ -1138,7 +1139,7 @@ const lambdas = async ({
           const name = f.replace(/\.js$/, "");
           const shasum = crypto.createHash("sha256");
           const data: Uint8Array[] = [];
-          return new Promise<void>((resolve) =>
+          return new Promise<void>((resolve, reject) =>
             zip
               .generateNodeStream({ type: "nodebuffer", streamFiles: true })
               .on("data", (d) => {
@@ -1186,7 +1187,8 @@ const lambdas = async ({
                     }
                   })
                   .then(console.log)
-                  .then(resolve);
+                  .then(resolve)
+                  .catch(reject);
               })
           );
         })
