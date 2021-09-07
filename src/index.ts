@@ -293,7 +293,7 @@ const EXTENSION_NAME_REGEX = /^[a-z][a-z0-9-]*$/;
 const init = async ({
   name,
   description,
-  user,
+  user = process.env.GITHUB_USERNAME,
   backend,
   repo = name,
 }: {
