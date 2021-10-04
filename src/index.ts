@@ -446,7 +446,7 @@ jobs:
       - name: build
         run: npm run build 
       - name: RoamJS Publish
-        uses: dvargas92495/roamjs-publish@0.2.1
+        uses: dvargas92495/roamjs-publish@0.2.5
         with:
           token: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
           source: build
@@ -483,10 +483,10 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js 12.16.1
+      - name: Use Node.js 14.17.6
         uses: actions/setup-node@v1
         with:
-          node-version: 12.16.1
+          node-version: 14.17.6
       - name: install
         run: npm install
       - name: Deploy
@@ -601,8 +601,6 @@ SOFTWARE.
         process.chdir(root);
         return new Promise<void>((resolve, reject) => {
           const dependencies = [
-            "@blueprintjs/core",
-            "@blueprintjs/select",
             "react",
             "react-dom",
             "roam-client",
@@ -1038,7 +1036,6 @@ const lambdas = async ({
           minify: true,
           plugins: [jsdomPatch],
           define: getDotEnvObject(),
-          target: "node12",
         })
         .then((r) =>
           r.errors.length
