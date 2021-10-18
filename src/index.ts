@@ -603,7 +603,6 @@ SOFTWARE.
           const dependencies = [
             "react",
             "react-dom",
-            "roam-client",
             "roamjs-components",
           ];
           const child = spawn(
@@ -1032,7 +1031,7 @@ const lambdas = async ({
           bundle: true,
           outdir: appPath("out"),
           platform: "node",
-          external: ["aws-sdk", "canvas"],
+          external: ["aws-sdk", "canvas", "re2"],
           minify: true,
           plugins: [jsdomPatch],
           define: getDotEnvObject(),
