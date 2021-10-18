@@ -600,11 +600,7 @@ SOFTWARE.
       task: () => {
         process.chdir(root);
         return new Promise<void>((resolve, reject) => {
-          const dependencies = [
-            "react",
-            "react-dom",
-            "roamjs-components",
-          ];
+          const dependencies = ["react", "react-dom", "roamjs-components"];
           const child = spawn(
             "npm",
             ["install", "--quiet"].concat(dependencies),
