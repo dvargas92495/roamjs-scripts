@@ -989,13 +989,7 @@ export const handler: APIGatewayProxyHandler = async () => {
 };
 
 const JS_FILE_REGEX = /\.js$/;
-const lambdas = async ({
-  build,
-  fast,
-}: {
-  build?: true;
-  fast?: true;
-}): Promise<number> => {
+const lambdas = async ({ build }: { build?: true }): Promise<number> => {
   await new Promise((resolve) => rimraf(appPath("out"), resolve));
   return new Promise<number>((resolve, reject) => {
     const entryPoints = Object.fromEntries(
@@ -1005,117 +999,38 @@ const lambdas = async ({
         .map((f) => f.name)
         .map((f) => [f.replace(/\.[t|j]s$/, ""), `./lambdas/${f}`])
     );
-    if (fast) {
-      const jsdomPatch: esbuild.Plugin = {
-        name: "jsdom-patch",
-        setup: (build) => {
-          build.onLoad({ filter: /XMLHttpRequest-impl\.js$/ }, async (args) => {
-            let contents = await fs.promises.readFile(args.path, "utf8");
+    const jsdomPatch: esbuild.Plugin = {
+      name: "jsdom-patch",
+      setup: (build) => {
+        build.onLoad({ filter: /XMLHttpRequest-impl\.js$/ }, async (args) => {
+          let contents = await fs.promises.readFile(args.path, "utf8");
 
-            contents = contents.replace(
-              'const syncWorkerFile = require.resolve ? require.resolve("./xhr-sync-worker.js") : null;',
-              `const syncWorkerFile = null;`
-            );
+          contents = contents.replace(
+            'const syncWorkerFile = require.resolve ? require.resolve("./xhr-sync-worker.js") : null;',
+            `const syncWorkerFile = null;`
+          );
 
-            return { contents, loader: "js" };
-          });
-        },
-      };
-      return esbuild
-        .build({
-          entryPoints,
-          bundle: true,
-          outdir: appPath("out"),
-          platform: "node",
-          external: ["aws-sdk", "canvas", "re2"],
-          minify: true,
-          plugins: [jsdomPatch],
-          define: getDotEnvObject(),
-        })
-        .then((r) =>
-          r.errors.length
-            ? reject(JSON.stringify(r.errors))
-            : resolve(r.errors.length)
-        )
-        .catch(reject);
-    } else {
-      return webpack(
-        {
-          entry: entryPoints,
-          target: "node",
-          mode: "production",
-          optimization,
-          module: {
-            rules: [
-              {
-                test: /\.tsx?$/,
-                use: [
-                  {
-                    loader: "babel-loader",
-                    options: {
-                      cacheDirectory: true,
-                      cacheCompression: false,
-                      presets: ["@babel/preset-env", "@babel/preset-react"],
-                    },
-                  },
-                  {
-                    loader: "ts-loader",
-                    options: {
-                      transpileOnly: true,
-                    },
-                  },
-                ],
-                exclude: /node_modules/,
-              },
-              {
-                test: /\.br$/,
-                use: [
-                  {
-                    loader: "file-loader",
-                    options: {
-                      name: "[path][name].[ext]",
-                    },
-                  },
-                ],
-              },
-              { test: /\.js\.map$/, loader: "ignore-loader" },
-            ],
-          },
-          output: {
-            libraryTarget: "umd",
-            path: path.resolve("out"),
-            filename: "[name].js",
-          },
-          resolve: {
-            extensions: [".ts", ".js", ".tsx"],
-            alias: {
-              process: "process/browser",
-            },
-          },
-          node: {
-            __dirname: true,
-          },
-          externals: [
-            "aws-sdk",
-            {
-              "utf-8-validate": "commonjs utf-8-validate",
-              bufferutil: "commonjs bufferutil",
-            },
-          ],
-          plugins: [
-            getDotEnvPlugin(),
-            new NodePolyfillPlugin({
-              excludeAliases: ["process"],
-            }),
-            new webpack.IgnorePlugin({
-              resourceRegExp: /canvas/m,
-              contextRegExp: /jsdom$/,
-            }),
-          ],
-        },
-        webpackCallback(resolve, reject)
-      );
-    }
+          return { contents, loader: "js" };
+        });
+      },
+    };
+    return esbuild
+      .build({
+        entryPoints,
+        bundle: true,
+        outdir: appPath("out"),
+        platform: "node",
+        external: ["aws-sdk", "canvas", "re2"],
+        minify: true,
+        plugins: [jsdomPatch],
+        define: getDotEnvObject(),
+      })
+      .then((r) =>
+        r.errors.length
+          ? reject(JSON.stringify(r.errors))
+          : resolve(r.errors.length)
+      )
+      .catch(reject);
   }).then((code) => {
     return Promise.all(
       fs
