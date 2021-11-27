@@ -427,6 +427,7 @@ on:
     branches: main
     paths:
       - "src/**"
+      - "package.json"
       - ".github/workflows/main.yaml"
 
 ${
@@ -446,7 +447,7 @@ jobs:
       - name: build
         run: npm run build 
       - name: RoamJS Publish
-        uses: dvargas92495/roamjs-publish@0.2.5
+        uses: dvargas92495/roamjs-publish@0.3.0
         with:
           token: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
           source: build
@@ -464,13 +465,14 @@ jobs:
           recursive: true,
         });
         return fs.writeFileSync(
-          path.join(root, ".github", "workflows", "lambdas.yaml"),
+          path.join(root, ".github", "workflows", "lambda.yaml"),
           `name: Publish Lambda
 on:
   push:
     branches: main
     paths:
-      - "lambdas/*"
+      - "lambdas/**"
+      - "package.json"
       - ".github/workflows/lambda.yaml"
 
 env:
