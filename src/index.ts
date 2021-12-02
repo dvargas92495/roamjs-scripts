@@ -174,7 +174,11 @@ const getBaseConfig = (): Promise<
         },
       ],
     },
-    plugins: [getDotEnvPlugin(), new NodePolyfillPlugin(), new webpack.ProvidePlugin({process: 'process/browser.js',}),],
+    plugins: [
+      getDotEnvPlugin(),
+      new NodePolyfillPlugin(),
+      new webpack.ProvidePlugin({ process: "process/browser.js" }),
+    ],
   });
 };
 
