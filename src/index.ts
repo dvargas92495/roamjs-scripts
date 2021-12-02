@@ -447,12 +447,14 @@ jobs:
       - name: build
         run: npm run build 
       - name: RoamJS Publish
-        uses: dvargas92495/roamjs-publish@0.3.0
+        uses: dvargas92495/roamjs-publish@0.4.1
         with:
           token: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
           source: build
           path: ${projectName}
           release_token: \${{ secrets.ROAMJS_RELEASE_TOKEN }}
+          email: ${user}@gmail.com
+          branch: \${{ github.ref_name }}
 `
         );
       },
