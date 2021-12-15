@@ -343,6 +343,14 @@ const init = async ({
           scripts: {
             build: "roamjs-scripts build",
             dev: "roamjs-scripts dev",
+            ...(backend
+              ? {
+                  preserver: "roamjs-scripts lambdas --build",
+                  lambdas: "roamjs-scripts lambdas",
+                  server: "localhost-lambdas",
+                  start: "concurrently npm:dev npm:server",
+                }
+              : {}),
           },
           license: "MIT",
         };
@@ -451,7 +459,7 @@ jobs:
       - name: build
         run: npm run build 
       - name: RoamJS Publish
-        uses: dvargas92495/roamjs-publish@0.4.1
+        uses: dvargas92495/roamjs-publish@0.4.2
         with:
           token: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
           source: build
@@ -560,7 +568,7 @@ SOFTWARE.
             "@types/react-dom",
             "roamjs-scripts",
             "typescript",
-          ];
+          ].concat(...(backend ? ["concurrently"] : []));
           const child = spawn(
             "npm",
             ["install", "--save-dev", "--quiet"].concat(dependencies),
@@ -633,8 +641,9 @@ SOFTWARE.
         fs.mkdirSync(path.join(root, "src"));
         return fs.writeFileSync(
           path.join(root, "src", "index.ts"),
-          `import { toConfig, runExtension } from "roam-client";
-import { createConfigObserver } from "roamjs-components";
+          `import toConfigPageName from "roamjs-components/util/toConfigPageName";
+import runExtension from "roamjs-components/util/runExtension";
+import { createConfigObserver } from "roamjs-components/components/ConfigPage";
 
 const ID = "${projectName}";
 const CONFIG = toConfig(ID);
@@ -998,6 +1007,8 @@ export const handler: APIGatewayProxyHandler = async () => {
 
 const JS_FILE_REGEX = /\.js$/;
 const lambdas = async ({ build }: { build?: true }): Promise<number> => {
+  process.env.NODE_ENV =
+    process.env.NODE_ENV || (build ? "development" : "production");
   await new Promise((resolve) => rimraf(appPath("out"), resolve));
   return new Promise<number>((resolve, reject) => {
     const entryPoints = Object.fromEntries(
