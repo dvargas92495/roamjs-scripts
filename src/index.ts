@@ -89,7 +89,10 @@ const getBaseConfig = (): Promise<
         fs
           .readdirSync("./src/workers", { withFileTypes: true })
           .filter((f) => !f.isDirectory())
-          .map((f) => [f.name.replace(/\.[t|j]s$/, ""), `./src/workers/${f.name}`])
+          .map((f) => [
+            f.name.replace(/\.[t|j]s$/, ""),
+            `./src/workers/${f.name}`,
+          ])
       )
     : {};
 
