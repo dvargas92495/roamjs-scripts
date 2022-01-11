@@ -84,9 +84,20 @@ const getBaseConfig = (): Promise<
       `Need an entry file in the \`src\` directory named index or ${name}`
     );
   }
+  const workers = fs.existsSync("./src/workers")
+    ? Object.fromEntries(
+        fs
+          .readdirSync("./src/workers", { withFileTypes: true })
+          .filter((f) => !f.isDirectory())
+          .map((f) => [f.name.replace(/\.[t|j]s$/, ""), `./src/workers/${f}`])
+      )
+    : {};
 
   return Promise.resolve({
-    entry: ["@babel/polyfill", `./src/${entryFile}`],
+    entry: {
+      main: ["@babel/polyfill", `./src/${entryFile}`],
+      ...workers,
+    },
     target: "web",
     resolve: {
       modules: ["node_modules", appPath("node_modules")],
@@ -94,7 +105,7 @@ const getBaseConfig = (): Promise<
     },
     output: {
       path: path.resolve("build"),
-      filename: "main.js",
+      filename: "[name].js",
     },
     module: {
       rules: [
@@ -459,7 +470,7 @@ jobs:
       - name: build
         run: npm run build 
       - name: RoamJS Publish
-        uses: dvargas92495/roamjs-publish@0.4.2
+        uses: dvargas92495/roamjs-publish@0.4.3
         with:
           token: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
           source: build
@@ -646,7 +657,7 @@ import runExtension from "roamjs-components/util/runExtension";
 import { createConfigObserver } from "roamjs-components/components/ConfigPage";
 
 const ID = "${projectName}";
-const CONFIG = toConfig(ID);
+const CONFIG = toConfigPageName(ID);
 runExtension(ID, () => {
   createConfigObserver({ title: CONFIG, config: { tabs: [] } });
 });
