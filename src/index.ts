@@ -255,6 +255,7 @@ const dev = async ({
 }): Promise<number> => {
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
+  process.env.NODE_ENV = process.env.NODE_ENV || "development";
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
