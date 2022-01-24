@@ -340,7 +340,8 @@ const init = async ({
   };
   const root = path.resolve(name);
   const extensionName = name.replace(/^roamjs-/, "");
-  const extensionDescription = description || `Description for ${extensionName}.`;
+  const extensionDescription =
+    description || `Description for ${extensionName}.`;
   const extensionExists = fs.existsSync(name);
   const terraformOrganizationToken = process.env.TERRAFORM_ORGANIZATION_TOKEN;
   const tasks = [
