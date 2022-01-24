@@ -315,12 +315,14 @@ const init = async ({
   user = process.env.GITHUB_USERNAME,
   backend,
   repo = name,
+  email = `${user}@gmail.com`,
 }: {
   name?: string;
   description?: string;
   user?: string;
   backend?: boolean;
   repo?: string;
+  email?: string;
 }): Promise<number> => {
   if (!name) {
     return Promise.reject("--name parameter is required");
@@ -337,8 +339,8 @@ const init = async ({
     },
   };
   const root = path.resolve(name);
-  const projectName = name.replace(/^roamjs-/, "");
-  const projectDescription = description || `Description for ${projectName}.`;
+  const extensionName = name.replace(/^roamjs-/, "");
+  const extensionDescription = description || `Description for ${extensionName}.`;
   const extensionExists = fs.existsSync(name);
   const terraformOrganizationToken = process.env.TERRAFORM_ORGANIZATION_TOKEN;
   const tasks = [
@@ -351,9 +353,9 @@ const init = async ({
       title: "Write Package JSON",
       task: () => {
         const packageJson = {
-          name: projectName,
+          name: extensionName,
           version: "1.0.0",
-          description: projectDescription,
+          description: extensionDescription,
           main: "./build/main.js",
           scripts: {
             build: "roamjs-scripts build",
@@ -401,9 +403,9 @@ const init = async ({
       task: () =>
         fs.writeFileSync(
           path.join(root, "README.md"),
-          `# ${projectName}
+          `# ${extensionName}
       
-${projectDescription}
+${extensionDescription}
       `
         ),
       skip: () => extensionExists,
@@ -478,7 +480,7 @@ jobs:
         with:
           token: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
           source: build
-          path: ${projectName}
+          path: ${extensionName}
           release_token: \${{ secrets.ROAMJS_RELEASE_TOKEN }}
           email: ${user}@gmail.com
           branch: \${{ github.ref_name }}
@@ -508,6 +510,8 @@ env:
   AWS_ACCESS_KEY_ID: \${{ secrets.DEPLOY_AWS_ACCESS_KEY }}
   AWS_SECRET_ACCESS_KEY: \${{ secrets.DEPLOY_AWS_ACCESS_SECRET }}
   ROAMJS_DEVELOPER_TOKEN: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
+  ROAMJS_EMAIL: ${email}
+  ROAMJS_EXTENSION_ID: ${extensionName}
 
 jobs:
   deploy:
@@ -660,7 +664,7 @@ SOFTWARE.
 import runExtension from "roamjs-components/util/runExtension";
 import { createConfigObserver } from "roamjs-components/components/ConfigPage";
 
-const ID = "${projectName}";
+const ID = "${extensionName}";
 const CONFIG = toConfigPageName(ID);
 runExtension(ID, () => {
   createConfigObserver({ title: CONFIG, config: { tabs: [] } });
@@ -726,10 +730,10 @@ module "roamjs_lambda" {
     github = github
   }
 
-  name = "${projectName}"
+  name = "${extensionName}"
   lambdas = [
     { 
-      path = "${projectName}", 
+      path = "${extensionName}", 
       method = "post"
     },
   ]
@@ -751,6 +755,8 @@ module "roamjs_lambda" {
           fs.writeFileSync(
             path.join(root, ".env.local"),
             `API_URL=http://localhost:3003/dev
+ROAMJS_EMAIL=${email}
+ROAMJS_EXTENSION_ID=${extensionName}
 `
           )
         );
@@ -762,7 +768,7 @@ module "roamjs_lambda" {
       task: () => {
         fs.mkdirSync(path.join(root, "lambdas"));
         return fs.writeFileSync(
-          path.join(root, "lambdas", `${projectName}_post.ts`),
+          path.join(root, "lambdas", `${extensionName}_post.ts`),
           `import { APIGatewayProxyHandler } from "aws-lambda";
 
 export const handler: APIGatewayProxyHandler = async () => {
@@ -870,7 +876,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       task: () => {
         process.chdir(root);
         return sync(
-          `git commit -m "Initial commit for RoamJS extension ${projectName}"`,
+          `git commit -m "Initial commit for RoamJS extension ${extensionName}"`,
           {
             stdio: "ignore",
           }
