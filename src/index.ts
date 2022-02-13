@@ -72,7 +72,7 @@ const getBaseConfig = (): Promise<
       webpack.Configuration,
       "entry" | "module" | "target" | "resolve" | "output" | "plugins"
     >
-  >
+  > & Partial<Pick<webpack.Configuration, "optimization">>
 > => {
   const srcFiles = fs.readdirSync("./src/");
   const name = getPackageName();
@@ -227,19 +227,24 @@ const build = ({ analyze }: { analyze?: boolean }): Promise<number> => {
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
-        if (analyze)
+        if (analyze) {
           baseConfig.plugins.push(
             new BundleAnalyzerPlugin({
               analyzerMode: "static",
             })
           );
+          baseConfig.optimization = {
+            minimize: false
+          };
+        } else {
+          baseConfig.optimization = optimization;
+        }
         webpack(
           {
             ...baseConfig,
             mode: "production",
-            optimization,
             performance: {
-              hints: "error",
+              hints: analyze ? "warning" : "error",
               maxEntrypointSize: 5000000,
               maxAssetSize: 5000000,
             },
