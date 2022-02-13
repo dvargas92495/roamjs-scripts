@@ -72,7 +72,8 @@ const getBaseConfig = (): Promise<
       webpack.Configuration,
       "entry" | "module" | "target" | "resolve" | "output" | "plugins"
     >
-  > & Partial<Pick<webpack.Configuration, "optimization">>
+  > &
+    Partial<Pick<webpack.Configuration, "optimization">>
 > => {
   const srcFiles = fs.readdirSync("./src/");
   const name = getPackageName();
@@ -234,7 +235,7 @@ const build = ({ analyze }: { analyze?: boolean }): Promise<number> => {
             })
           );
           baseConfig.optimization = {
-            minimize: false
+            minimize: false,
           };
         } else {
           baseConfig.optimization = optimization;
