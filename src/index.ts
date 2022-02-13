@@ -19,6 +19,7 @@ import TerserWebpackPlugin from "terser-webpack-plugin";
 import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
 import "@babel/polyfill";
 import esbuild from "esbuild";
+import {BundleAnalyzerPlugin} from "webpack-bundle-analyzer";
 
 const lambda = new AWS.Lambda({
   apiVersion: "2015-03-31",
@@ -222,10 +223,13 @@ const webpackCallback = (
   }
 };
 
-const build = (): Promise<number> => {
+const build = ({analyze}: {analyze?: boolean}): Promise<number> => {
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
+        if (analyze) baseConfig.plugins.push(new BundleAnalyzerPlugin({
+          analyzerMode: "static",
+        }));
         webpack(
           {
             ...baseConfig,
@@ -1320,7 +1324,7 @@ const run = async (command: string, args: string[]): Promise<number> => {
   );
   switch (command) {
     case "build":
-      return build();
+      return build(opts);
     case "dev":
       return dev(opts);
     case "init":
