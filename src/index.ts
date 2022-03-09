@@ -35,9 +35,7 @@ const getDotEnvObject = () => {
         .filter(([k]) => !/[()]/.test(k))
         .filter(([k]) => !IGNORE_ENV.includes(k))
     ),
-    ...(fs.existsSync(".env")
-      ? dotenv.parse(fs.readFileSync(".env"))
-      : {}),
+    ...(fs.existsSync(".env") ? dotenv.parse(fs.readFileSync(".env")) : {}),
     ...(fs.existsSync(".env.local")
       ? dotenv.parse(fs.readFileSync(".env.local"))
       : {}),
