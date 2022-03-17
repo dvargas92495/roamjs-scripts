@@ -109,15 +109,17 @@ const getBaseConfig = (): Promise<
     target: "web",
     // Roam is already exposing React - let's use it!
     externals: {
-      'react': "React",
+      react: "React",
     },
     resolve: {
       modules: ["node_modules", appPath("node_modules")],
       extensions: [".ts", ".js", ".tsx"],
       alias: {
-        // It's not exposing react-dom yet, so we need to bundle our own      
-        "react-dom": path.resolve('node_modules/react-dom/cjs/react-dom.production.min.js')
-      }
+        // It's not exposing react-dom yet, so we need to bundle our own
+        "react-dom": path.resolve(
+          "node_modules/react-dom/cjs/react-dom.production.min.js"
+        ),
+      },
     },
     output: {
       path: path.resolve("build"),
@@ -1286,18 +1288,16 @@ const publish = async ({
           };
           info(`Uploading version ${version} of ${p} to ${Key}...`);
           return [
-            s3
-              .putObject({
-                Key: `${destPath}/${version}${fileName}`,
-                ...uploadProps,
-                Body: fs.createReadStream(p),
-              }),
-            s3
-              .putObject({
-                Key,
-                ...uploadProps,
-                Body: fs.createReadStream(p),
-              }),
+            s3.putObject({
+              Key: `${destPath}/${version}${fileName}`,
+              ...uploadProps,
+              Body: fs.createReadStream(p),
+            }),
+            s3.putObject({
+              Key,
+              ...uploadProps,
+              Body: fs.createReadStream(p),
+            }),
           ];
         })
       )
