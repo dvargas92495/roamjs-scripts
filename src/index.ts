@@ -10,7 +10,6 @@ import getName from "git-user-name";
 import os from "os";
 import spawn, { sync } from "cross-spawn";
 import sodium from "tweetsodium";
-import AWS from "aws-sdk";
 import mime from "mime-types";
 import JSZip from "jszip";
 import crypto from "crypto";
@@ -20,8 +19,11 @@ import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
 import "@babel/polyfill";
 import esbuild from "esbuild";
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer";
+import { Lambda } from "@aws-sdk/client-lambda";
+import { S3 } from "@aws-sdk/client-s3";
+import { CloudFront } from "@aws-sdk/client-cloudfront";
 
-const lambda = new AWS.Lambda({
+const lambda = new Lambda({
   apiVersion: "2015-03-31",
   region: "us-east-1",
 });
@@ -105,9 +107,17 @@ const getBaseConfig = (): Promise<
       ...workers,
     },
     target: "web",
+    // Roam is already exposing React - let's use it!
+    externals: {
+      'react': "React",
+    },
     resolve: {
       modules: ["node_modules", appPath("node_modules")],
       extensions: [".ts", ".js", ".tsx"],
+      alias: {
+        // It's not exposing react-dom yet, so we need to bundle our own      
+        "react-dom": path.resolve('node_modules/react-dom/cjs/react-dom.production.min.js')
+      }
     },
     output: {
       path: path.resolve("build"),
@@ -1117,7 +1127,6 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
                   .getFunction({
                     FunctionName,
                   })
-                  .promise()
                   .then((l) => {
                     if (sha256 === l.Configuration?.CodeSha256) {
                       return `No need to upload ${f}, shas match.`;
@@ -1142,7 +1151,6 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
                               Publish: true,
                               ZipFile: Buffer.concat(data),
                             })
-                            .promise()
                             .then(
                               (upd) =>
                                 `Succesfully uploaded ${f} at ${upd.LastModified}`
@@ -1231,11 +1239,11 @@ const publish = async ({
         secretAccessKey: r.data.credentials.SecretAccessKey,
         sessionToken: r.data.credentials.SessionToken,
       };
-      const s3 = new AWS.S3({
+      const s3 = new S3({
         apiVersion: "2006-03-01",
         credentials,
       });
-      const cloudfront = new AWS.CloudFront({
+      const cloudfront = new CloudFront({
         apiVersion: "2020-05-31",
         credentials,
       });
@@ -1248,7 +1256,6 @@ const publish = async ({
           const { trial = 0, ...args } = props;
           cloudfront
             .getInvalidation(args)
-            .promise()
             .then((r) => r.Invalidation?.Status)
             .then((status) => {
               if (status === "Completed") {
@@ -1280,19 +1287,17 @@ const publish = async ({
           info(`Uploading version ${version} of ${p} to ${Key}...`);
           return [
             s3
-              .upload({
+              .putObject({
                 Key: `${destPath}/${version}${fileName}`,
                 ...uploadProps,
                 Body: fs.createReadStream(p),
-              })
-              .promise(),
+              }),
             s3
-              .upload({
+              .putObject({
                 Key,
                 ...uploadProps,
                 Body: fs.createReadStream(p),
-              })
-              .promise(),
+              }),
           ];
         })
       )
@@ -1308,7 +1313,6 @@ const publish = async ({
                 },
               },
             })
-            .promise()
             .then((i) => ({
               Id: i.Invalidation?.Id || "",
               DistributionId: r.data.distributionId,
