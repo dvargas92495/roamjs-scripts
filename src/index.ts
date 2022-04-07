@@ -433,6 +433,8 @@ const init = async ({
           `# ${extensionName}
       
 ${extensionDescription}
+
+For full documentation, checkout https://roamjs.com/extensions/${extensionName}!
       `
         ),
       skip: () => extensionExists,
