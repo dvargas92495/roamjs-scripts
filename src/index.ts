@@ -1091,7 +1091,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         outdir: appPath("out"),
         platform: "node",
         external: ["aws-sdk", "canvas", "re2"],
-        minify: true,
+        minify: !build,
         plugins: [jsdomPatch],
         define: getDotEnvObject(),
       })
