@@ -69,7 +69,9 @@ const getPackageName = () =>
     : repoName.sync({ cwd: path.resolve(".") })
   )?.replace(/^roamjs-/, "");
 
-const getBaseConfig = (): Promise<
+const getBaseConfig = ({
+  outfile = "[name].js",
+}: { outfile?: string } = {}): Promise<
   Required<
     Pick<
       webpack.Configuration,
@@ -123,7 +125,7 @@ const getBaseConfig = (): Promise<
     },
     output: {
       path: path.resolve("build"),
-      filename: "[name].js",
+      filename: outfile,
     },
     module: {
       rules: [
@@ -237,9 +239,15 @@ const webpackCallback = (
   }
 };
 
-const build = ({ analyze }: { analyze?: boolean }): Promise<number> => {
+const build = ({
+  analyze,
+  outfile,
+}: {
+  analyze?: boolean;
+  outfile?: string;
+}): Promise<number> => {
   return new Promise((resolve, reject) => {
-    getBaseConfig()
+    getBaseConfig({ outfile })
       .then((baseConfig) => {
         if (analyze) {
           baseConfig.plugins.push(
@@ -274,16 +282,18 @@ const dev = async ({
   host: inputHost,
   port: inputPort,
   hot: hotReloading = false,
+  outfile,
 }: {
   host?: string;
   port?: string;
   hot?: boolean;
+  outfile?: string;
 }): Promise<number> => {
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
   return new Promise((resolve, reject) => {
-    getBaseConfig()
+    getBaseConfig({ outfile })
       .then((baseConfig) => {
         baseConfig.module.rules?.push({
           test: /\.js$/,
@@ -386,6 +396,9 @@ const init = async ({
           main: "./build/main.js",
           scripts: {
             build: "roamjs-scripts build",
+            "prebuild:roam": "npm install",
+            "build:roam": "roamjs-scripts build --outfile extension.js",
+            "dev:roam": "roamjs-scripts dev --outfile extension.js",
             dev: "roamjs-scripts dev",
             ...(backend
               ? {
@@ -438,6 +451,11 @@ For full documentation, checkout https://roamjs.com/extensions/${extensionName}!
       `
         ),
       skip: () => extensionExists,
+    },
+    {
+      title: "Write build.sh",
+      task: () =>
+        fs.writeFileSync(path.join(root, "build.sh"), `npm run build:roam`),
     },
     {
       title: "Write tsconfig.json",
@@ -547,10 +565,10 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js 14.17.6
+      - name: Use Node.js 16.14.0
         uses: actions/setup-node@v1
         with:
-          node-version: 14.17.6
+          node-version: 16.14.0
       - name: install
         run: npm install
       - name: Deploy
