@@ -329,6 +329,7 @@ const dev = async ({
           injectClient: false,
           hot: hotReloading,
           inline: false,
+          writeToDisk: true,
         });
 
         server.listen(port, host, function (err) {
@@ -397,7 +398,7 @@ const init = async ({
           scripts: {
             build: "roamjs-scripts build",
             "prebuild:roam": "npm install",
-            "build:roam": "roamjs-scripts build --outfile extension.js",
+            "build:roam": "cross-env ROAM_MARKETPLACE=true roamjs-scripts build --outfile extension.js",
             "dev:roam": "roamjs-scripts dev --outfile extension.js",
             dev: "roamjs-scripts dev",
             ...(backend
@@ -633,6 +634,7 @@ SOFTWARE.
           const dependencies = [
             "@types/react",
             "@types/react-dom",
+            "cross-env",
             "roamjs-scripts",
             "typescript",
           ].concat(...(backend ? ["concurrently"] : []));
@@ -712,10 +714,14 @@ SOFTWARE.
 import runExtension from "roamjs-components/util/runExtension";
 import { createConfigObserver } from "roamjs-components/components/ConfigPage";
 
-const ID = "${extensionName}";
+const extensionId = "${extensionName}";
 const CONFIG = toConfigPageName(ID);
-runExtension(ID, () => {
-  createConfigObserver({ title: CONFIG, config: { tabs: [] } });
+runExtension({
+  extensionId, 
+  run: () => {
+    createConfigObserver({ title: CONFIG, config: { tabs: [] } });
+  },
+  unload: () => {},
 });
 `
         );
