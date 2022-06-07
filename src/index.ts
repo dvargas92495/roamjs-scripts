@@ -398,7 +398,8 @@ const init = async ({
           scripts: {
             build: "roamjs-scripts build",
             "prebuild:roam": "npm install",
-            "build:roam": "cross-env ROAM_MARKETPLACE=true roamjs-scripts build --outfile extension.js",
+            "build:roam":
+              "cross-env ROAM_MARKETPLACE=true roamjs-scripts build --outfile extension.js",
             "dev:roam": "roamjs-scripts dev --outfile extension.js",
             dev: "roamjs-scripts dev",
             ...(backend
