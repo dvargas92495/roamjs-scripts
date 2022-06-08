@@ -118,11 +118,16 @@ const getBaseConfig = (): Promise<
     target: "web",
     ...(isForRoamMarketplace
       ? {
-          // Roam is already exposing React - let's use it!
           externals: {
             react: "React",
             "react-dom": "ReactDOM",
-          } as Record<string, string>,
+            "@blueprintjs/core": ["Blueprint", "Core"],
+            "@blueprintjs/select": ["Blueprint", "Select"],
+            "chrono-node": "ChronoNode",
+            idb: "idb",
+            nanoid: "nanoid",
+            "file-saver": "FileSaver",
+          } as Record<string, string | string[]>,
           externalsType: "window",
           resolve: {
             modules: ["node_modules", appPath("node_modules")],
