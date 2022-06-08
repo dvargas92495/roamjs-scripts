@@ -116,23 +116,18 @@ const getBaseConfig = (): Promise<
       ...workers,
     },
     target: "web",
-    // Roam is already exposing React - let's use it!
-    externals: {
-      react: "React",
-    },
-    externalsType: "window",
-    resolve: {
-      modules: ["node_modules", appPath("node_modules")],
-      extensions: [".ts", ".js", ".tsx"],
-      alias: {
-        // It's not exposing react-dom yet, so we need to bundle our own
-        "react-dom": path.resolve(
-          "node_modules/react-dom/cjs/react-dom.production.min.js"
-        ),
-      },
-    },
     ...(isForRoamMarketplace
       ? {
+          // Roam is already exposing React - let's use it!
+          externals: {
+            react: "React",
+            "react-dom": "ReactDOM",
+          } as Record<string, string>,
+          externalsType: "window",
+          resolve: {
+            modules: ["node_modules", appPath("node_modules")],
+            extensions: [".ts", ".js", ".tsx"],
+          },
           output: {
             path: path.resolve("."),
             filename: "extension.js",
@@ -145,6 +140,21 @@ const getBaseConfig = (): Promise<
           },
         }
       : {
+          // Roam is already exposing React - let's use it!
+          externals: {
+            react: "React",
+          } as Record<string, string>,
+          externalsType: "var",
+          resolve: {
+            modules: ["node_modules", appPath("node_modules")],
+            extensions: [".ts", ".js", ".tsx"],
+            alias: {
+              // It's not exposing react-dom yet, so we need to bundle our own
+              "react-dom": path.resolve(
+                "node_modules/react-dom/cjs/react-dom.production.min.js"
+              ),
+            },
+          },
           output: {
             path: path.resolve("build"),
             filename: "[name].js",
