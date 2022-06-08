@@ -69,13 +69,18 @@ const getPackageName = () =>
     : repoName.sync({ cwd: path.resolve(".") })
   )?.replace(/^roamjs-/, "");
 
-const getBaseConfig = ({
-  outfile = "[name].js",
-}: { outfile?: string } = {}): Promise<
+const getBaseConfig = (): Promise<
   Required<
     Pick<
       webpack.Configuration,
-      "entry" | "module" | "target" | "resolve" | "output" | "plugins"
+      | "entry"
+      | "module"
+      | "target"
+      | "resolve"
+      | "output"
+      | "plugins"
+      | "experiments"
+      | "externals"
     >
   > &
     Partial<Pick<webpack.Configuration, "optimization">>
@@ -102,6 +107,7 @@ const getBaseConfig = ({
           ])
       )
     : {};
+  const isForRoamMarketplace = process.env.ROAM_MARKETPLACE === "true";
 
   return Promise.resolve({
     entry: {
@@ -123,10 +129,26 @@ const getBaseConfig = ({
         ),
       },
     },
-    output: {
-      path: path.resolve("build"),
-      filename: outfile,
-    },
+    ...(isForRoamMarketplace
+      ? {
+          output: {
+            path: path.resolve("."),
+            filename: "experiment.js",
+            library: {
+              type: "module",
+            },
+          },
+          experiments: {
+            outputModule: true,
+          },
+        }
+      : {
+          output: {
+            path: path.resolve("build"),
+            filename: "[name].js",
+          },
+          experiments: {},
+        }),
     module: {
       rules: [
         {
@@ -239,15 +261,9 @@ const webpackCallback = (
   }
 };
 
-const build = ({
-  analyze,
-  outfile,
-}: {
-  analyze?: boolean;
-  outfile?: string;
-}): Promise<number> => {
+const build = ({ analyze }: { analyze?: boolean }): Promise<number> => {
   return new Promise((resolve, reject) => {
-    getBaseConfig({ outfile })
+    getBaseConfig()
       .then((baseConfig) => {
         if (analyze) {
           baseConfig.plugins.push(
@@ -282,18 +298,16 @@ const dev = async ({
   host: inputHost,
   port: inputPort,
   hot: hotReloading = false,
-  outfile,
 }: {
   host?: string;
   port?: string;
   hot?: boolean;
-  outfile?: string;
 }): Promise<number> => {
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
   return new Promise((resolve, reject) => {
-    getBaseConfig({ outfile })
+    getBaseConfig()
       .then((baseConfig) => {
         baseConfig.module.rules?.push({
           test: /\.js$/,
@@ -399,8 +413,8 @@ const init = async ({
             build: "roamjs-scripts build",
             "prebuild:roam": "npm install",
             "build:roam":
-              "cross-env ROAM_MARKETPLACE=true roamjs-scripts build --outfile extension.js",
-            "dev:roam": "roamjs-scripts dev --outfile extension.js",
+              "cross-env ROAM_MARKETPLACE=true roamjs-scripts build",
+            "dev:roam": "cross-env ROAM_MARKETPLACE=true roamjs-scripts dev",
             dev: "roamjs-scripts dev",
             ...(backend
               ? {
