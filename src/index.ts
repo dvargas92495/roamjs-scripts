@@ -81,6 +81,7 @@ const getBaseConfig = (): Promise<
       | "plugins"
       | "experiments"
       | "externals"
+      | "externalsType"
     >
   > &
     Partial<Pick<webpack.Configuration, "optimization">>
@@ -119,6 +120,7 @@ const getBaseConfig = (): Promise<
     externals: {
       react: "React",
     },
+    externalsType: "window",
     resolve: {
       modules: ["node_modules", appPath("node_modules")],
       extensions: [".ts", ".js", ".tsx"],
@@ -133,7 +135,7 @@ const getBaseConfig = (): Promise<
       ? {
           output: {
             path: path.resolve("."),
-            filename: "experiment.js",
+            filename: "extension.js",
             library: {
               type: "module",
             },
@@ -605,6 +607,7 @@ dist
 out
 .env
 .env.local
+extension.js
 `
         );
       },
