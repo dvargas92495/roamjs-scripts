@@ -295,6 +295,7 @@ const build = ({ analyze }: { analyze?: boolean }): Promise<number> => {
           baseConfig.optimization = {
             minimize: false,
           };
+          baseConfig.output.library = {};
         } else {
           baseConfig.optimization = optimization;
         }
