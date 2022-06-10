@@ -90,8 +90,8 @@ const getBaseConfig = (): Promise<
   const name = getPackageName();
 
   const entryFile =
-    srcFiles.find((s) => /index\.(t|j)s/.test(s)) ||
-    srcFiles.find((s) => new RegExp(`${name}\\.(t|j)s`).test(s));
+    srcFiles.find((s) => new RegExp(`${name}\\.(t|j)s`).test(s)) ||
+    srcFiles.find((s) => /index\.(t|j)s/.test(s));
   if (!entryFile) {
     return Promise.reject(
       `Need an entry file in the \`src\` directory named index or ${name}`
@@ -119,16 +119,18 @@ const getBaseConfig = (): Promise<
     ...(isForRoamMarketplace
       ? {
           externals: {
-            react: "React",
-            "react-dom": "ReactDOM",
             "@blueprintjs/core": ["Blueprint", "Core"],
             "@blueprintjs/datetime": ["Blueprint", "DateTime"],
             "@blueprintjs/select": ["Blueprint", "Select"],
             "chrono-node": "ChronoNode",
             "crypto-js": "CryptoJS",
-            idb: "idb",
-            nanoid: "Nanoid",
             "file-saver": "FileSaver",
+            idb: "idb",
+            marked: ["RoamLazy", "Marked"],
+            "marked-react": ["RoamLazy", "MarkedReact"],
+            nanoid: "Nanoid",
+            react: "React",
+            "react-dom": "ReactDOM",
           } as Record<string, string | string[]>,
           externalsType: "window",
           resolve: {
