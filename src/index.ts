@@ -290,6 +290,7 @@ const build = ({ analyze }: { analyze?: boolean }): Promise<number> => {
           baseConfig.plugins.push(
             new BundleAnalyzerPlugin({
               analyzerMode: "static",
+              generateStatsFile: true,
             })
           );
           baseConfig.optimization = {
@@ -308,6 +309,7 @@ const build = ({ analyze }: { analyze?: boolean }): Promise<number> => {
               maxEntrypointSize: 5000000,
               maxAssetSize: 5000000,
             },
+            stats: "verbose",
           },
           webpackCallback(resolve, reject)
         );
