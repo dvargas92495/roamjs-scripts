@@ -297,7 +297,16 @@ const build = ({
   marketplace?: boolean;
 }): Promise<number> => {
   const version = toVersion();
-  fs.appendFileSync(".env", `ROAMJS_VERSION=${version}`);
+  const envExisting = fs.existsSync(".env")
+    ? fs.readFileSync(".env").toString()
+    : "";
+  fs.writeFileSync(
+    ".env",
+    `${envExisting.replace(
+      /ROAMJS_VERSION=[\d-]+\n/gs,
+      ""
+    )}ROAMJS_VERSION=${version}\n`
+  );
   if (marketplace) {
     process.env.ROAM_MARKETPLACE = "true";
   }
@@ -696,20 +705,13 @@ SOFTWARE.
       skip: () => extensionExists,
     },
     {
-      title: "Install Dev Packages",
+      title: "Install Dev Package",
       task: () => {
         process.chdir(root);
         return new Promise<void>((resolve, reject) => {
-          const dependencies = [
-            "@types/react",
-            "@types/react-dom",
-            "cross-env",
-            "roamjs-scripts",
-            "typescript",
-          ].concat(...(backend ? ["concurrently"] : []));
           const child = spawn(
             "npm",
-            ["install", "--save-dev", "--quiet"].concat(dependencies),
+            ["install", "--save-dev", "--quiet", "roamjs-scripts"],
             {
               stdio: "inherit",
             }
@@ -754,10 +756,9 @@ SOFTWARE.
       task: () => {
         process.chdir(root);
         return new Promise<void>((resolve, reject) => {
-          const dependencies = ["react", "react-dom", "roamjs-components"];
           const child = spawn(
             "npm",
-            ["install", "--quiet"].concat(dependencies),
+            ["install", "--quiet", "roamjs-components"],
             {
               stdio: "inherit",
             }
