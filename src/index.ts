@@ -125,12 +125,14 @@ const getBaseConfig = (): Promise<
             "chrono-node": "ChronoNode",
             "crypto-js": "CryptoJS",
             "file-saver": "FileSaver",
+            jszip: ["RoamLazy", "JSZip"],
             idb: "idb",
             marked: ["RoamLazy", "Marked"],
             "marked-react": ["RoamLazy", "MarkedReact"],
             nanoid: "Nanoid",
             react: "React",
             "react-dom": "ReactDOM",
+            tslib: "TSLib",
           } as Record<string, string | string[]>,
           externalsType: "window",
           resolve: {
@@ -640,6 +642,8 @@ out
 .env
 .env.local
 extension.js
+report.html
+stats.json
 `
         );
       },
