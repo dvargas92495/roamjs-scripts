@@ -289,9 +289,18 @@ const webpackCallback = (
   }
 };
 
-const build = ({ analyze }: { analyze?: boolean }): Promise<number> => {
+const build = ({
+  analyze,
+  marketplace,
+}: {
+  analyze?: boolean;
+  marketplace?: boolean;
+}): Promise<number> => {
   const version = toVersion();
   fs.appendFileSync(".env", `ROAMJS_VERSION=${version}`);
+  if (marketplace) {
+    process.env.ROAM_MARKETPLACE = "true";
+  }
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
@@ -331,15 +340,20 @@ const dev = async ({
   host: inputHost,
   port: inputPort,
   hot: hotReloading = false,
+  marketplace = false,
 }: {
   host?: string;
   port?: string;
   hot?: boolean;
+  marketplace?: boolean;
 }): Promise<number> => {
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
   process.env.ROAMJS_VERSION = "development";
+  if (marketplace) {
+    process.env.ROAM_MARKETPLACE = "true";
+  }
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
@@ -642,6 +656,7 @@ out
 .env
 .env.local
 extension.js
+extension.js.LICENSE.txt
 report.html
 stats.json
 `
