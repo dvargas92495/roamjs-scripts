@@ -354,18 +354,20 @@ const dev = async ({
           },
         });
         const server = new webpackDevServer(compiler, {
-          contentBase: appPath("build"),
           host: host,
-          disableHostCheck: true,
-          publicPath: `http://${hostOutput}:${port}/`,
           headers: {
             "Access-Control-Allow-Origin": "https://roamresearch.com",
           },
-          clientLogLevel: "none",
-          injectClient: false,
           hot: hotReloading,
-          inline: false,
-          writeToDisk: true,
+          devMiddleware: {
+            writeToDisk: true,
+            publicPath: `http://${hostOutput}:${port}/`,
+          },
+          static: {
+            directory: appPath("build"),
+          },
+          allowedHosts: "all",
+          client: false,
         });
 
         server.listen(port, host, function (err) {
