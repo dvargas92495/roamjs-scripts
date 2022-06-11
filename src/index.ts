@@ -147,9 +147,7 @@ const getBaseConfig = (): Promise<
           experiments: {
             outputModule: true,
           },
-          plugins: [
-            getDotEnvPlugin(),
-          ],
+          plugins: [getDotEnvPlugin()],
         }
       : {
           entry: {
