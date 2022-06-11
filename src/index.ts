@@ -288,6 +288,8 @@ const webpackCallback = (
 };
 
 const build = ({ analyze }: { analyze?: boolean }): Promise<number> => {
+  const version = toVersion();
+  fs.appendFileSync(".env", `ROAMJS_VERSION=${version}`);
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
@@ -335,6 +337,7 @@ const dev = async ({
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
+  process.env.ROAMJS_VERSION = "development";
   return new Promise((resolve, reject) => {
     getBaseConfig()
       .then((baseConfig) => {
@@ -1265,6 +1268,12 @@ const readDir = (s: string): string[] =>
     );
 
 const toDoubleDigit = (n: number) => n.toString().padStart(2, "0");
+const toVersion = (today = new Date()) =>
+  `${today.getFullYear()}-${toDoubleDigit(
+    today.getMonth() + 1
+  )}-${toDoubleDigit(today.getDate())}-${toDoubleDigit(
+    today.getHours()
+  )}-${toDoubleDigit(today.getMinutes())}`;
 
 const publish = async ({
   token,
@@ -1346,11 +1355,7 @@ const publish = async ({
             });
         });
       const today = new Date();
-      const version = `${today.getFullYear()}-${toDoubleDigit(
-        today.getMonth() + 1
-      )}-${toDoubleDigit(today.getDate())}-${toDoubleDigit(
-        today.getHours()
-      )}-${toDoubleDigit(today.getMinutes())}`;
+      const version = toVersion(today);
       return Promise.all(
         fileNames.flatMap((p) => {
           const fileName = p.substring(sourcePath.length);
