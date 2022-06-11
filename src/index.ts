@@ -111,13 +111,13 @@ const getBaseConfig = (): Promise<
   const isForRoamMarketplace = process.env.ROAM_MARKETPLACE === "true";
 
   return Promise.resolve({
-    entry: {
-      main: ["@babel/polyfill", `./src/${entryFile}`],
-      ...workers,
-    },
     target: "web",
     ...(isForRoamMarketplace
       ? {
+          entry: {
+            extension: `./src/${entryFile}`,
+            ...workers,
+          },
           externals: {
             "@blueprintjs/core": ["Blueprint", "Core"],
             "@blueprintjs/datetime": ["Blueprint", "DateTime"],
@@ -139,7 +139,7 @@ const getBaseConfig = (): Promise<
           },
           output: {
             path: path.resolve("."),
-            filename: "extension.js",
+            filename: "[name].js",
             library: {
               type: "module",
             },
@@ -149,6 +149,10 @@ const getBaseConfig = (): Promise<
           },
         }
       : {
+          entry: {
+            main: ["@babel/polyfill", `./src/${entryFile}`],
+            ...workers,
+          },
           // Roam is already exposing React - let's use it!
           externals: {
             react: "React",
