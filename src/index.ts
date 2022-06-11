@@ -147,6 +147,9 @@ const getBaseConfig = (): Promise<
           experiments: {
             outputModule: true,
           },
+          plugins: [
+            getDotEnvPlugin(),
+          ],
         }
       : {
           entry: {
@@ -173,6 +176,11 @@ const getBaseConfig = (): Promise<
             filename: "[name].js",
           },
           experiments: {},
+          plugins: [
+            getDotEnvPlugin(),
+            new NodePolyfillPlugin(),
+            new webpack.ProvidePlugin({ process: "process/browser.js" }),
+          ],
         }),
     module: {
       rules: [
@@ -252,11 +260,6 @@ const getBaseConfig = (): Promise<
         },
       ],
     },
-    plugins: [
-      getDotEnvPlugin(),
-      new NodePolyfillPlugin(),
-      new webpack.ProvidePlugin({ process: "process/browser.js" }),
-    ],
   });
 };
 
