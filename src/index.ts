@@ -1153,10 +1153,10 @@ export const handler: APIGatewayProxyHandler = async () => {
 const JS_FILE_REGEX = /\.js$/;
 const lambdas = async ({
   build,
-  reset,
+  unset,
 }: {
   build?: true;
-  reset?: string;
+  unset?: string;
 }): Promise<number> => {
   process.env.NODE_ENV =
     process.env.NODE_ENV || (build ? "development" : "production");
@@ -1185,8 +1185,8 @@ const lambdas = async ({
       },
     };
     const define = getDotEnvObject();
-    if (reset) {
-      delete define[`process.env.${reset}`];
+    if (unset) {
+      define[`process.env.${unset}`] = "";
     }
     return esbuild
       .build({
