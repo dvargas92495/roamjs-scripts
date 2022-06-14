@@ -1186,7 +1186,7 @@ const lambdas = async ({
     };
     const define = getDotEnvObject();
     if (unset) {
-      define[`process.env.${unset}`] = "";
+      define[`process.env.${unset}`] = `""`;
     }
     return esbuild
       .build({
