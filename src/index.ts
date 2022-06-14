@@ -17,7 +17,7 @@ import rimraf from "rimraf";
 import TerserWebpackPlugin from "terser-webpack-plugin";
 import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
 import "@babel/polyfill";
-import esbuild from "esbuild";
+import * as esbuild from "esbuild";
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer";
 import { Lambda } from "@aws-sdk/client-lambda";
 import { S3 } from "@aws-sdk/client-s3";

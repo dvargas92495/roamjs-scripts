@@ -45,11 +45,6 @@
     "ts-jest": "^26.5.5",
     "tslint-config-prettier": "^1.18.0"
   },
-  "peerDependencies": {
-    "@types/file-saver": "2.0.5",
-    "@types/react": "17.0.39",
-    "@types/react-dom": "17.0.13"
-  },
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.54.1",
     "@aws-sdk/client-lambda": "^3.54.1",
