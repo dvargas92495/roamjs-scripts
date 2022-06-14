@@ -1151,7 +1151,13 @@ export const handler: APIGatewayProxyHandler = async () => {
 };
 
 const JS_FILE_REGEX = /\.js$/;
-const lambdas = async ({ build }: { build?: true }): Promise<number> => {
+const lambdas = async ({
+  build,
+  reset,
+}: {
+  build?: true;
+  reset?: string;
+}): Promise<number> => {
   process.env.NODE_ENV =
     process.env.NODE_ENV || (build ? "development" : "production");
   await new Promise((resolve) => rimraf(appPath("out"), resolve));
@@ -1178,6 +1184,10 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         });
       },
     };
+    const define = getDotEnvObject();
+    if (reset) {
+      delete define[`process.env.${reset}`];
+    }
     return esbuild
       .build({
         entryPoints,
@@ -1187,7 +1197,7 @@ const lambdas = async ({ build }: { build?: true }): Promise<number> => {
         external: ["aws-sdk", "canvas", "re2"],
         minify: !build,
         plugins: [jsdomPatch],
-        define: getDotEnvObject(),
+        define,
       })
       .then((r) =>
         r.errors.length
