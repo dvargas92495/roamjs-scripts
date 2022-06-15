@@ -1,0 +1,79 @@
+import appPath from "./common/appPath";
+import webpack from "webpack";
+import webpackDevServer from "webpack-dev-server";
+import getBaseConfig from "./common/getBaseConfig";
+
+const dev = async ({
+  host: inputHost,
+  port: inputPort,
+  hot: hotReloading = false,
+  marketplace = false,
+}: {
+  host?: string;
+  port?: string;
+  hot?: boolean;
+  marketplace?: boolean;
+}): Promise<number> => {
+  const port = Number(inputPort) || 8000;
+  const host = inputHost || "127.0.0.1";
+  process.env.NODE_ENV = process.env.NODE_ENV || "development";
+  process.env.ROAMJS_VERSION = "development";
+  if (marketplace) {
+    process.env.ROAM_MARKETPLACE = "true";
+  }
+  return new Promise((resolve, reject) => {
+    getBaseConfig()
+      .then((baseConfig) => {
+        baseConfig.module.rules?.push({
+          test: /\.js$/,
+          enforce: "pre",
+          exclude: /node_modules/,
+          use: ["source-map-loader"],
+        });
+        let hostOutput = host;
+        if (["127.0.0.1", "0.0.0.0"].includes(host)) {
+          // Don't try to show links with 0.0.0.0
+          hostOutput = "localhost";
+        }
+        baseConfig.output.publicPath = `http://${hostOutput}:${port}/`;
+        baseConfig.output.pathinfo = true;
+        const compiler = webpack({
+          ...baseConfig,
+          mode: "development",
+          performance: {
+            hints: "error",
+            maxEntrypointSize: 20000000,
+            maxAssetSize: 20000000,
+          },
+        });
+        const server = new webpackDevServer(compiler, {
+          host: host,
+          headers: {
+            "Access-Control-Allow-Origin": "https://roamresearch.com",
+          },
+          hot: hotReloading,
+          devMiddleware: {
+            writeToDisk: true,
+            publicPath: `http://${hostOutput}:${port}/`,
+          },
+          static: {
+            directory: appPath("build"),
+          },
+          allowedHosts: "all",
+          client: false,
+        });
+
+        server.listen(port, host, function (err) {
+          if (err) {
+            reject(err);
+          } else {
+            console.log(`WebpackDevServer listening at ${hostOutput}:${port}`);
+            resolve(-1);
+          }
+        });
+      })
+      .catch(reject);
+  });
+};
+
+export default dev;
