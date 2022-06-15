@@ -15,7 +15,6 @@ import JSZip from "jszip";
 import crypto from "crypto";
 import rimraf from "rimraf";
 import TerserWebpackPlugin from "terser-webpack-plugin";
-import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
 import "@babel/polyfill";
 import * as esbuild from "esbuild";
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer";
@@ -112,33 +111,35 @@ const getBaseConfig = (): Promise<
 
   return Promise.resolve({
     target: "web",
+    externals: {
+      "@blueprintjs/core": ["Blueprint", "Core"],
+      "@blueprintjs/datetime": ["Blueprint", "DateTime"],
+      "@blueprintjs/select": ["Blueprint", "Select"],
+      "chrono-node": "ChronoNode",
+      "crypto-js": "CryptoJS",
+      "file-saver": "FileSaver",
+      jszip: ["RoamLazy", "JSZip"],
+      idb: "idb",
+      marked: ["RoamLazy", "Marked"],
+      "marked-react": ["RoamLazy", "MarkedReact"],
+      nanoid: "Nanoid",
+      react: "React",
+      "react-dom": "ReactDOM",
+      tslib: "TSLib",
+    } as Record<string, string | string[]>,
+    externalsType: "window",
+    resolve: {
+      modules: ["node_modules", appPath("node_modules")],
+      extensions: [".ts", ".js", ".tsx"],
+    },
+    plugins: [getDotEnvPlugin()],
+    entry: {
+      extension: `./src/${entryFile}`,
+      main: `./src/${entryFile}`,
+      ...workers,
+    },
     ...(isForRoamMarketplace
       ? {
-          entry: {
-            extension: `./src/${entryFile}`,
-            ...workers,
-          },
-          externals: {
-            "@blueprintjs/core": ["Blueprint", "Core"],
-            "@blueprintjs/datetime": ["Blueprint", "DateTime"],
-            "@blueprintjs/select": ["Blueprint", "Select"],
-            "chrono-node": "ChronoNode",
-            "crypto-js": "CryptoJS",
-            "file-saver": "FileSaver",
-            jszip: ["RoamLazy", "JSZip"],
-            idb: "idb",
-            marked: ["RoamLazy", "Marked"],
-            "marked-react": ["RoamLazy", "MarkedReact"],
-            nanoid: "Nanoid",
-            react: "React",
-            "react-dom": "ReactDOM",
-            tslib: "TSLib",
-          } as Record<string, string | string[]>,
-          externalsType: "window",
-          resolve: {
-            modules: ["node_modules", appPath("node_modules")],
-            extensions: [".ts", ".js", ".tsx"],
-          },
           output: {
             path: path.resolve("."),
             filename: "[name].js",
@@ -149,38 +150,13 @@ const getBaseConfig = (): Promise<
           experiments: {
             outputModule: true,
           },
-          plugins: [getDotEnvPlugin()],
         }
       : {
-          entry: {
-            main: ["@babel/polyfill", `./src/${entryFile}`],
-            ...workers,
-          },
-          // Roam is already exposing React - let's use it!
-          externals: {
-            react: "React",
-          } as Record<string, string>,
-          externalsType: "var",
-          resolve: {
-            modules: ["node_modules", appPath("node_modules")],
-            extensions: [".ts", ".js", ".tsx"],
-            alias: {
-              // It's not exposing react-dom yet, so we need to bundle our own
-              "react-dom": path.resolve(
-                "node_modules/react-dom/cjs/react-dom.production.min.js"
-              ),
-            },
-          },
           output: {
             path: path.resolve("build"),
             filename: "[name].js",
           },
           experiments: {},
-          plugins: [
-            getDotEnvPlugin(),
-            new NodePolyfillPlugin(),
-            new webpack.ProvidePlugin({ process: "process/browser.js" }),
-          ],
         }),
     module: {
       rules: [
