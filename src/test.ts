@@ -19,8 +19,8 @@ const test = ({
     config: {
       env,
       e2e: {
-        baseUrl: "https://roamresearch.com/#/offline/test-graph"
-      }
+        baseUrl: "https://roamresearch.com/#/offline/test-graph",
+      },
     },
     testingType: "e2e",
     env,
