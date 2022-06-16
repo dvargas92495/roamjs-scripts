@@ -11,8 +11,9 @@ const test = ({
 }): Promise<number> => {
   process.env.CYPRESS_VERIFY_TIMEOUT = "100000";
   const env = {
-    ROAM_USER_PASSWORD: process.env.ROAM_USER_PASSWORD,
+    ROAM_PASSWORD: process.env.ROAM_PASSWORD,
     ROAM_USERNAME: process.env.ROAM_USERNAME,
+    ROAMJS_EXTENSION_ID: process.env.ROAMJS_EXTENSION_ID,
   };
   const args:
     | CypressCommandLine.CypressRunOptions
@@ -24,6 +25,7 @@ const test = ({
         specPattern: "tests/**/*.{ts,tsx}",
         supportFile: false,
         videosFolder: "./node_modules/roamjs-sctips/dist/cypress/videos",
+        chromeWebSecurity: false,
       },
     },
     testingType: "e2e",

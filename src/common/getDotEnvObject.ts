@@ -3,7 +3,8 @@ import dotenv from "dotenv";
 
 const IGNORE_ENV = ["HOME"];
 const getDotEnvObject = (): Record<string, string> => {
-  const env = {
+  const env: Record<string, string> = {
+    ROAM_MARKETPLACE: "", // temporarily add some defaults
     ...Object.fromEntries(
       Object.entries(process.env)
         .filter(([k]) => !/[()]/.test(k))
