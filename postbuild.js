@@ -8,5 +8,5 @@ fs.writeFileSync(
   fs
     .readFileSync("./node_modules/local-cypress.index.d.ts")
     .toString()
-    .replace(/EventEmitter/, "CyEventEmitter")
+    .replace(/EventEmitter/g, "CyEventEmitter")
 );
