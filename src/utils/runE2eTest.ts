@@ -33,7 +33,7 @@ if (!existing) {
       cy.type(`{tab}\`\`\`javascript\n${installation}\`\`\``);
       cy.get(".rm-code-warning .bp3-button").click();
 
-      test({cy, Cypress, done});
+      test({ cy, Cypress, done });
 
       // delete graph
     });
