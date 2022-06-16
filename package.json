@@ -5,18 +5,17 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "postinstall": "node postinstall.js",
-    "build": "tsc",
-    "postbuild": "node postbuild.js",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint . --ext .ts",
-    "prepublishOnly": "npm t",
     "preversion": "npm run lint",
     "version": "npm run format && git add -A src",
     "postversion": "git push origin main && git push --tags",
-    "pretest": "npm run lint",
+    "prebuild": "npm run lint",
+    "build": "tsc",
+    "postbuild": "node postbuild.js",
     "test": "cross-env NODE_ENV=test jest --config jestconfig.json",
-    "posttest": "rimraf build"
+    "posttest": "rimraf build",
+    "prepublishOnly": "npm t"
   },
   "license": "MIT",
   "files": [
