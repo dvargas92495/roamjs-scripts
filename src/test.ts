@@ -1,6 +1,5 @@
 import cypress from "cypress";
 import dotenv from "dotenv";
-import appPath from "./common/appPath";
 dotenv.config();
 
 const test = ({
