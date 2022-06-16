@@ -15,17 +15,26 @@ const test = ({
     ROAM_USER_PASSWORD: process.env.ROAM_USER_PASSWORD,
     ROAM_USERNAME: process.env.ROAM_USERNAME,
   };
-  const args: CypressCommandLine.CypressCommonOptions = {
+  const args:
+    | CypressCommandLine.CypressRunOptions
+    | CypressCommandLine.CypressOpenOptions = {
     config: {
       env,
       e2e: {
         baseUrl: "https://roamresearch.com/",
+        specPattern: "tests/**/*.{ts,tsx}",
+        supportFile: false,
+        videosFolder: "./node_modules/roamjs-sctips/dist/cypress/videos",
       },
     },
     testingType: "e2e",
     env,
-    configFile: "",
-    project: appPath("."),
+    configFile: "./node_modules/roamjs-scripts/dist/common/cypress.config.js",
+    project: process.cwd(),
+    browser: "chrome",
+    detached: false,
+    global: false,
+    port: 8080,
   };
   if (open) {
     return cypress.open(args).then(() => 0);
