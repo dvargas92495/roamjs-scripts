@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "postinstall": "node postinstall.js",
     "build": "tsc",
     "postbuild": "node postbuild.js",
     "format": "prettier --write \"src/**/*.ts\"",
