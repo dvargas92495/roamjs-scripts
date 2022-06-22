@@ -58,6 +58,7 @@
     "cross-spawn": "^7.0.3",
     "css-loader": "^5.2.5",
     "cypress": "^10.1.0",
+    "cypress-plugin-tab": "^1.0.5",
     "dotenv": "^8.4.0",
     "esbuild": "^0.12.22",
     "file-loader": "^6.2.0",

@@ -23,8 +23,8 @@ const test = ({
       e2e: {
         baseUrl: "https://roamresearch.com/",
         specPattern: "tests/**/*.{ts,tsx}",
-        supportFile: false,
-        videosFolder: "./node_modules/roamjs-sctips/dist/cypress/videos",
+        supportFile: "./node_modules/roamjs-scripts/dist/common/cypress.support.js",
+        videosFolder: "./node_modules/roamjs-scripts/dist/cypress/videos",
         chromeWebSecurity: false,
       },
     },
