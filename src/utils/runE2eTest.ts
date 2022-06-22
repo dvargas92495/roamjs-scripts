@@ -40,7 +40,9 @@ if (!existing) {{}
   extension.type = "text/javascript";
   document.getElementsByTagName("head")[0].appendChild(extension);
 }`;
-      cy.get("textarea.rm-block-input").type(`{tab}\`\`\`javascript\n${installation}\`\`\``);
+      cy.get("textarea.rm-block-input").type(
+        `{tab}\`\`\`javascript\n${installation}\`\`\``
+      );
       cy.get(".rm-code-warning .bp3-button").click();
 
       test({ cy, Cypress, done });
