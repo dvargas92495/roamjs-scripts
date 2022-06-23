@@ -1,4 +1,5 @@
 import { cy as imported, describe, it, Cypress, expect } from "local-cypress";
+import "cypress-plugin-tab";
 
 const runE2eTest = (
   title: string,
@@ -12,7 +13,8 @@ const runE2eTest = (
   describe(title, () => {
     it(`Running Test: ${title}`, (done) => {
       cy.visit("#/signin");
-      cy.get(".loading-astrolabe").should("not.exist");
+      cy.get(".loading-astrolabe");
+      cy.get(".loading-astrolabe", { timeout: 60000 }).should("not.exist");
       cy.location().then((loc) => {
         if (loc.hash.endsWith("app")) {
           // already logged in, good to keep going
@@ -25,11 +27,16 @@ const runE2eTest = (
           expect(loc.hash).to.match(/(app|signin)/);
         }
       });
-      cy.get(".my-graphs");
+      cy.get(".my-graphs", { timeout: 60000 });
       cy.visit("#/offline/testing-graph");
-      cy.get(".roam-block").click();
-      cy.get("textarea.rm-block-input").type("{{}{{}[[roam/js]]}}{enter}");
-      const installation = `var existing = document.getElementById("roamjs-${Cypress.env(
+      cy.get(".loading-astrolabe");
+      cy.get(".loading-astrolabe", { timeout: 60000 }).should("not.exist");
+      cy.get(".roam-block").first().click();
+      cy.get("textarea.rm-block-input")
+        .clear()
+        .type("{{}{{}[[roam/js]]}}{enter}");
+      cy.get("textarea.rm-block-input").tab().type(`\`\`\``);
+      cy.get(".cm-active-line").click().type(`var existing = document.getElementById("roamjs-${Cypress.env(
         "ROAMJS_EXTENSION_ID"
       )}-main");
 if (!existing) {{}
@@ -39,10 +46,7 @@ if (!existing) {{}
   extension.async = true;
   extension.type = "text/javascript";
   document.getElementsByTagName("head")[0].appendChild(extension);
-}`;
-      cy.get("textarea.rm-block-input").type(
-        `{tab}\`\`\`javascript\n${installation}\`\`\``
-      );
+}`);
       cy.get(".rm-code-warning .bp3-button").click();
 
       test({ cy, Cypress, done });

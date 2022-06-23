@@ -4,6 +4,7 @@ import path from "path";
 import getPackageName from "./getPackageName";
 import getDotEnvObject from "./getDotEnvObject";
 import appPath from "./appPath";
+import "@babel/polyfill";
 
 const getDotEnvPlugin = () => new webpack.DefinePlugin(getDotEnvObject());
 
@@ -73,8 +74,8 @@ const getBaseConfig = (): Promise<
     },
     plugins: [getDotEnvPlugin()],
     entry: {
-      extension: `./src/${entryFile}`,
-      main: `./src/${entryFile}`,
+      extension: ["@babel/polyfill", `./src/${entryFile}`],
+      main: ["@babel/polyfill", `./src/${entryFile}`],
       ...workers,
     },
     ...(isForRoamMarketplace

@@ -23,8 +23,8 @@ const test = ({
       e2e: {
         baseUrl: "https://roamresearch.com/",
         specPattern: "tests/**/*.{ts,tsx}",
-        supportFile:
-          "./node_modules/roamjs-scripts/dist/common/cypress.support.js",
+        // we cant use a real support file bc cypress ignores globs that have node_modules in them :(
+        supportFile: false,
         videosFolder: "./node_modules/roamjs-scripts/dist/cypress/videos",
         chromeWebSecurity: false,
       },
