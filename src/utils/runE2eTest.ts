@@ -36,7 +36,8 @@ const runE2eTest = (
         .clear()
         .type("{{}{{}[[roam/js]]}}{enter}");
       cy.get("textarea.rm-block-input").tab().type(`\`\`\``);
-      cy.get(".cm-active-line").click().type(`var existing = document.getElementById("roamjs-${Cypress.env(
+      cy.get(".cm-active-line").click()
+        .type(`var existing = document.getElementById("roamjs-${Cypress.env(
         "ROAMJS_EXTENSION_ID"
       )}-main");
 if (!existing) {{}
