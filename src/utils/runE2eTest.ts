@@ -28,15 +28,18 @@ const runE2eTest = (
         }
       });
       cy.get(".my-graphs", { timeout: 60000 });
-      cy.visit("#/offline/testing-graph");
+      const graph = "testing-graph";
+      cy.visit(`#/offline/${graph}`);
       cy.get(".loading-astrolabe");
       cy.get(".loading-astrolabe", { timeout: 60000 }).should("not.exist");
+      localStorage.setItem(`roamjs:experimental:${graph}`, "true");
       cy.get(".roam-block").first().click();
       cy.get("textarea.rm-block-input")
         .clear()
         .type("{{}{{}[[roam/js]]}}{enter}");
-      cy.get("textarea.rm-block-input").tab().type(`\`\`\``);
-      cy.get(".cm-active-line").click()
+      cy.get("textarea.rm-block-input").tab().wait(1000);
+      cy.get("textarea.rm-block-input").click().type(`\`\`\``);
+      cy.get(".cm-content").first().click()
         .type(`var existing = document.getElementById("roamjs-${Cypress.env(
         "ROAMJS_EXTENSION_ID"
       )}-main");
@@ -46,8 +49,7 @@ if (!existing) {{}
   extension.id = "roamjs-${Cypress.env("ROAMJS_EXTENSION_ID")}-main";
   extension.async = true;
   extension.type = "text/javascript";
-  document.getElementsByTagName("head")[0].appendChild(extension);
-}`);
+  document.getElementsByTagName("head")[0].appendChild(extension);`); // dont enter closing brace, autocomplete adds it for us
       cy.get(".rm-code-warning .bp3-button").click();
 
       test({ cy, Cypress, done });
