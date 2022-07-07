@@ -64,6 +64,7 @@ const build = ({
   );
   if (marketplace) {
     process.env.ROAM_MARKETPLACE = "true";
+    process.env.API_URL = "https://lambda.roamjs.com";
   }
   return new Promise((resolve, reject) => {
     getBaseConfig()
