@@ -369,18 +369,18 @@ const init = async ({
         return fs.writeFileSync(
           path.join(root, "src", "index.ts"),
           `import toConfigPageName from "roamjs-components/util/toConfigPageName";
-  import runExtension from "roamjs-components/util/runExtension";
-  import { createConfigObserver } from "roamjs-components/components/ConfigPage";
-  
-  const extensionId = "${extensionName}";
-  const CONFIG = toConfigPageName(ID);
-  runExtension({
-    extensionId, 
-    run: () => {
-      createConfigObserver({ title: CONFIG, config: { tabs: [] } });
-    },
-    unload: () => {},
-  });
+import runExtension from "roamjs-components/util/runExtension";
+import { createConfigObserver } from "roamjs-components/components/ConfigPage";
+
+const extensionId = "${extensionName}";
+const CONFIG = toConfigPageName(extensionId);
+export default runExtension({
+  extensionId, 
+  run: () => {
+    createConfigObserver({ title: CONFIG, config: { tabs: [] } });
+  },
+  unload: () => {},
+});
   `
         );
       },
