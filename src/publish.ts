@@ -93,6 +93,11 @@ const createGithubRelease = async ({
             /^roamjs-/,
             ""
           )}.json`;
+          const { name: authorName, email: authorEmail } = await axios
+            .get(`https://api.github.com/user`, opts)
+            .then((r) => r.data);
+          execSync(`git config --global user.email "${authorEmail}`);
+          execSync(`git config --global user.name "${authorName}"`);
           if (pr) {
             execSync(`git checkout ${repo}`);
             const manifest = fs.readFileSync(manifestFile).toString();
@@ -119,9 +124,6 @@ const createGithubRelease = async ({
               .split("-")
               .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
               .join(" ");
-            const author = axios
-              .get(`  https://api.github.com/users/${owner}`)
-              .then((r) => r.data.name);
             fs.writeFileSync(
               manifestFile,
               JSON.stringify(
@@ -130,7 +132,7 @@ const createGithubRelease = async ({
                   short_description:
                     packageJson?.description ||
                     "Description missing from package json",
-                  author,
+                  author: authorName,
                   tags: packageJson?.tags || [],
                   source_url: `https://github.com/${owner}/${repo}`,
                   source_repo: `https://github.com/${owner}/${repo}.git`,
