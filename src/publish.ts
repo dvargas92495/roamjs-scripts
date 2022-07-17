@@ -169,7 +169,7 @@ const publish = async ({
   token = process.env.ROAMJS_DEVELOPER_TOKEN,
   email,
   user,
-  source,
+  source = "build",
   path: destPathInput = getPackageName(),
   logger: { info, warning } = { info: console.log, warning: console.warn },
   marketplace,
@@ -190,7 +190,7 @@ const publish = async ({
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
     : token;
-  const sourcePath = appPath(source || "build");
+  const sourcePath = appPath(source);
   info(`Source Path: ${sourcePath}`);
   const fileNames = readDir(sourcePath);
 
@@ -226,6 +226,7 @@ const publish = async ({
       const s3 = new S3({
         apiVersion: "2006-03-01",
         credentials,
+        region: "us-east-1"
       });
       const cloudfront = new CloudFront({
         apiVersion: "2020-05-31",

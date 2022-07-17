@@ -57,12 +57,11 @@ const init = async ({
           description: extensionDescription,
           main: "./build/main.js",
           scripts: {
-            build: "roamjs-scripts build",
             "prebuild:roam": "npm install",
             "build:roam":
               "cross-env ROAM_MARKETPLACE=true roamjs-scripts build",
             "dev:roam": "cross-env ROAM_MARKETPLACE=true roamjs-scripts dev",
-            dev: "roamjs-scripts dev",
+            start: "roamjs-scripts dev",
             ...(backend
               ? {
                   preserver: "roamjs-scripts lambdas --build",
@@ -108,10 +107,10 @@ const init = async ({
           path.join(root, "README.md"),
           `# ${extensionName}
         
-  ${extensionDescription}
+${extensionDescription}
   
-  For full documentation, checkout https://roamjs.com/extensions/${extensionName}!
-        `
+For full documentation, checkout https://roamjs.com/extensions/${extensionName}!
+`
         ),
       skip: () => extensionExists,
     },
@@ -161,40 +160,31 @@ const init = async ({
         return fs.writeFileSync(
           path.join(root, ".github", "workflows", "main.yaml"),
           `name: Publish Extension
-  on:
-    push:
-      branches: main
-      paths:
-        - "src/**"
-        - "package.json"
-        - ".github/workflows/main.yaml"
-  
-  ${
-    backend
-      ? `env:
-    API_URL: https://lambda.roamjs.com
-  `
-      : ""
-  }
-  jobs:
-    deploy:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v2
-        - name: install
-          run: npm install
-        - name: build
-          run: npm run build 
-        - name: RoamJS Publish
-          uses: dvargas92495/roamjs-publish@0.4.3
-          with:
-            token: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
-            source: build
-            path: ${extensionName}
-            release_token: \${{ secrets.ROAMJS_RELEASE_TOKEN }}
-            email: ${user}@gmail.com
-            branch: \${{ github.ref_name }}
-  `
+on:
+  push:
+    branches: main
+    paths:
+      - "src/**"
+      - "package.json"
+      - ".github/workflows/main.yaml"
+
+env:
+  API_URL: https://lambda.roamjs.com
+  ROAMJS_DEVELOPER_TOKEN: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
+  ROAMJS_RELEASE_TOKEN: \${{ secrets.ROAMJS_RELEASE_TOKEN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: npm install
+      - name: build
+        run: npx roamjs-scripts build 
+      - name: publish
+        run: npx roamjs-scripts publish --email support@roamjs.com --commit \${{ github.sha }} --marketplace
+`
         );
       },
       skip: () => extensionExists || !process.env.ROAMJS_DEVELOPER_TOKEN,
