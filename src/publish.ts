@@ -226,7 +226,7 @@ const publish = async ({
       const s3 = new S3({
         apiVersion: "2006-03-01",
         credentials,
-        region: "us-east-1"
+        region: "us-east-1",
       });
       const cloudfront = new CloudFront({
         apiVersion: "2020-05-31",
