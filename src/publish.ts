@@ -109,7 +109,8 @@ const createGithubRelease = async ({
             console.log(`Updated pull request: ${pr}`);
           } else {
             execSync(`git checkout -b ${repo}`);
-            fs.mkdirSync(`extensions/${owner}`);
+            if (!fs.existsSync(`extensions/${owner}`))
+              fs.mkdirSync(`extensions/${owner}`);
             const packageJson = JSON.parse(
               fs.readFileSync(`${cwd}/package.json`).toString()
             );
@@ -231,6 +232,7 @@ const publish = async ({
       const cloudfront = new CloudFront({
         apiVersion: "2020-05-31",
         credentials,
+        region: "us-east-1",
       });
       const waitForCloudfront = (props: {
         Id: string;
@@ -298,7 +300,13 @@ const publish = async ({
         )
         .then((cf) =>
           axios
-            .get("https://lambda.roamjs.com/user")
+            .get("https://lambda.roamjs.com/user", {
+              headers: {
+                Authorization,
+                "x-roamjs-token": Authorization,
+                "x-roamjs-extension": "developer",
+              },
+            })
             .then((r) =>
               createGithubRelease({
                 tagName: version,
