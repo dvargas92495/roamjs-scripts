@@ -100,8 +100,14 @@ const createGithubRelease = async ({
             .then((r) => r.data);
           execSync(`git config --global user.email "${authorEmail}"`);
           execSync(`git config --global user.name "${authorName}"`);
+          execSync(
+            `git remote add roam https://github.com/Roam-Research/roam-depot`
+          );
+          execSync(`git pull roam main`);
+          execSync(`git push origin main`);
           if (pr) {
             execSync(`git checkout ${repo}`);
+            execSync(`git rebase origin/main`);
             const manifest = fs.readFileSync(manifestFile).toString();
             fs.writeFileSync(
               manifestFile,
@@ -112,7 +118,7 @@ const createGithubRelease = async ({
             );
             execSync("git add --all");
             execSync(`git commit -m "Version ${tagName}"`);
-            execSync(`git push origin ${repo}`);
+            execSync(`git push origin ${repo} -f`);
             console.log(`Updated pull request: ${pr}`);
           } else {
             execSync(`git checkout -b ${repo}`);
@@ -143,10 +149,11 @@ const createGithubRelease = async ({
                 },
                 null,
                 4
-              )
+              ) + "\n"
             );
+            const title = `${name}: Version ${tagName}`;
             execSync("git add --all");
-            execSync(`git commit -m "${name}: Version ${tagName}"`);
+            execSync(`git commit -m "${title}"`);
             execSync(`git push origin ${repo}`);
             const url = await axios
               .post(
@@ -154,10 +161,12 @@ const createGithubRelease = async ({
                 {
                   head: `${owner}:${repo}`,
                   base: "main",
+                  title,
                 },
                 opts
               )
-              .then((r) => r.data.url);
+              .then((r) => r.data.html_url)
+              .catch((e) => Promise.reject(e.response.data || e.message));
             console.log(`Created pull request: ${url}`);
           }
           process.chdir(cwd);

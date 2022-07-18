@@ -21,6 +21,8 @@ const dev = async ({
   if (marketplace) {
     process.env.ROAM_MARKETPLACE = "true";
     process.env.API_URL = "https://lambda.roamjs.com";
+  } else {
+    process.env.ROAM_MARKETPLACE = "";
   }
   return new Promise((resolve, reject) => {
     getBaseConfig()
