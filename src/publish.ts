@@ -87,7 +87,9 @@ const createGithubRelease = async ({
             .then((r) => r.data[0]?.html_url);
           const cwd = process.cwd();
           process.chdir("/tmp");
-          execSync(`git clone https://${owner}:${token}@github.com/${owner}/roam-depot.git`);
+          execSync(
+            `git clone https://${owner}:${token}@github.com/${owner}/roam-depot.git`
+          );
           process.chdir("roam-depot");
           const manifestFile = `extensions/${owner}/${repo.replace(
             /^roamjs-/,
