@@ -96,7 +96,7 @@ const createGithubRelease = async ({
           const { name: authorName, email: authorEmail } = await axios
             .get(`https://api.github.com/user`, opts)
             .then((r) => r.data);
-          execSync(`git config --global user.email "${authorEmail}`);
+          execSync(`git config --global user.email "${authorEmail}"`);
           execSync(`git config --global user.name "${authorName}"`);
           if (pr) {
             execSync(`git checkout ${repo}`);
