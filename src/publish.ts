@@ -124,33 +124,44 @@ const createGithubRelease = async ({
             execSync(`git checkout -b ${repo}`);
             if (!fs.existsSync(`extensions/${owner}`))
               fs.mkdirSync(`extensions/${owner}`);
-            const packageJson = JSON.parse(
-              fs.readFileSync(`${cwd}/package.json`).toString()
-            );
-            const name = repo
-              .replace(/^roamjs-/, "")
-              .split("-")
-              .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
-              .join(" ");
-            fs.writeFileSync(
-              manifestFile,
-              JSON.stringify(
-                {
-                  name,
-                  short_description:
-                    packageJson?.description ||
-                    "Description missing from package json",
-                  author: authorName,
-                  tags: packageJson?.tags || [],
-                  source_url: `https://github.com/${owner}/${repo}`,
-                  source_repo: `https://github.com/${owner}/${repo}.git`,
-                  source_commit: commit,
-                  stripe_account: stripe,
-                },
-                null,
-                4
-              ) + "\n"
-            );
+            if (fs.existsSync(manifestFile)) {
+              const manifest = fs.readFileSync(manifestFile).toString();
+              fs.writeFileSync(
+                manifestFile,
+                manifest.replace(
+                  /"source_commit": "[a-f0-9]+",/,
+                  `"source_commit": "${commit}",`
+                )
+              );
+            } else {
+              const packageJson = JSON.parse(
+                fs.readFileSync(`${cwd}/package.json`).toString()
+              );
+              const name = repo
+                .replace(/^roamjs-/, "")
+                .split("-")
+                .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
+                .join(" ");
+              fs.writeFileSync(
+                manifestFile,
+                JSON.stringify(
+                  {
+                    name,
+                    short_description:
+                      packageJson?.description ||
+                      "Description missing from package json",
+                    author: authorName,
+                    tags: packageJson?.tags || [],
+                    source_url: `https://github.com/${owner}/${repo}`,
+                    source_repo: `https://github.com/${owner}/${repo}.git`,
+                    source_commit: commit,
+                    stripe_account: stripe,
+                  },
+                  null,
+                  4
+                ) + "\n"
+              );
+            }
             const title = `${name}: Version ${tagName}`;
             execSync("git add --all");
             execSync(`git commit -m "${title}"`);
