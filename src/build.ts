@@ -52,7 +52,7 @@ const build = ({
   analyze?: boolean;
   // @deprecated
   marketplace?: boolean;
-  depot?: boolean
+  depot?: boolean;
 }): Promise<number> => {
   const version = toVersion();
   const envExisting = fs.existsSync(".env")

@@ -15,7 +15,7 @@ const dev = async ({
   hot?: boolean;
   // @deprecated
   marketplace?: boolean;
-  depot?: boolean
+  depot?: boolean;
 }): Promise<number> => {
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
