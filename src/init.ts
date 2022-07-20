@@ -59,8 +59,8 @@ const init = async ({
           scripts: {
             "prebuild:roam": "npm install",
             "build:roam":
-              "cross-env ROAM_MARKETPLACE=true roamjs-scripts build",
-            "dev:roam": "cross-env ROAM_MARKETPLACE=true roamjs-scripts dev",
+              "cross-env ROAM_MARKETPLACE=true roamjs-scripts build --depot",
+            "dev:roam": "cross-env ROAM_MARKETPLACE=true roamjs-scripts dev --depot",
             start: "roamjs-scripts dev",
             ...(backend
               ? {
@@ -183,7 +183,7 @@ jobs:
       - name: build
         run: npx roamjs-scripts build 
       - name: publish
-        run: npx roamjs-scripts publish --email support@roamjs.com --commit \${{ github.sha }} --marketplace
+        run: npx roamjs-scripts publish --email support@roamjs.com --commit \${{ github.sha }} --depot
 `
         );
       },

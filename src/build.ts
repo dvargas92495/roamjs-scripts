@@ -47,9 +47,12 @@ const webpackCallback = (
 const build = ({
   analyze,
   marketplace,
+  depot = marketplace,
 }: {
   analyze?: boolean;
+  // @deprecated
   marketplace?: boolean;
+  depot?: boolean
 }): Promise<number> => {
   const version = toVersion();
   const envExisting = fs.existsSync(".env")
@@ -62,7 +65,7 @@ const build = ({
       ""
     )}ROAMJS_VERSION=${version}\n`
   );
-  if (marketplace) {
+  if (depot) {
     process.env.ROAM_MARKETPLACE = "true";
     process.env.API_URL = "https://lambda.roamjs.com";
   } else {
