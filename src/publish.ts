@@ -38,14 +38,14 @@ const createGithubRelease = async ({
   repo,
   commit,
   tagName,
-  marketplace,
+  depot,
   stripe,
 }: {
   owner: string;
   repo: string;
   commit?: string;
   tagName: string;
-  marketplace?: boolean;
+  depot?: boolean;
   stripe?: string;
 }): Promise<void> => {
   const token = process.env.ROAMJS_RELEASE_TOKEN;
@@ -78,7 +78,7 @@ const createGithubRelease = async ({
         console.log(
           `Successfully created github release for version ${r.data.tag_name}`
         );
-        if (marketplace) {
+        if (depot) {
           console.log("Attempting to publish to Roam Depot...");
           const pr = await axios
             .get(
@@ -192,13 +192,14 @@ const createGithubRelease = async ({
 
 const publish = async ({
   token = process.env.ROAMJS_DEVELOPER_TOKEN,
-  email,
+  email = process.env.ROAMJS_EMAIL,
   user,
   source = "build",
   path: destPathInput = getPackageName(),
   logger: { info, warning } = { info: console.log, warning: console.warn },
   marketplace,
-  commit,
+  depot = marketplace,
+  commit = process.env.GITHUB_SHA,
 }: {
   token?: string;
   email?: string;
@@ -209,7 +210,9 @@ const publish = async ({
     info: (s: string) => void;
     warning: (s: string) => void;
   };
+  //@deprecated
   marketplace?: boolean;
+  depot?: boolean;
   commit?: string;
 }): Promise<number> => {
   const Authorization = email
@@ -337,7 +340,7 @@ const publish = async ({
                 repo: path.basename(process.cwd()),
                 owner: user || r.data.username || "",
                 commit,
-                marketplace,
+                depot,
                 stripe: r.data.stripeAccount,
               })
             )

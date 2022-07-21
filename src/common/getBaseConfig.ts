@@ -47,7 +47,9 @@ const getBaseConfig = (): Promise<
           ])
       )
     : {};
-  const isForRoamMarketplace = process.env.ROAM_MARKETPLACE === "true";
+  const isForRoamDepot =
+    process.env.ROAM_MARKETPLACE === "true" ||
+    process.env.ROAM_DEPOT === "true";
 
   return Promise.resolve({
     target: "web",
@@ -74,11 +76,13 @@ const getBaseConfig = (): Promise<
     },
     plugins: [getDotEnvPlugin()],
     entry: {
-      extension: ["@babel/polyfill", `./src/${entryFile}`],
-      main: ["@babel/polyfill", `./src/${entryFile}`],
+      [isForRoamDepot ? "extension" : "main"]: [
+        "@babel/polyfill",
+        `./src/${entryFile}`,
+      ],
       ...workers,
     },
-    ...(isForRoamMarketplace
+    ...(isForRoamDepot
       ? {
           output: {
             path: path.resolve("."),

@@ -5,6 +5,7 @@ const IGNORE_ENV = ["HOME"];
 const getDotEnvObject = (): Record<string, string> => {
   const env: Record<string, string> = {
     ROAM_MARKETPLACE: "", // temporarily add some defaults
+    ROAM_DEPOT: "",
     ...Object.fromEntries(
       Object.entries(process.env)
         .filter(([k]) => !/[()]/.test(k))
