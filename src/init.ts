@@ -13,7 +13,7 @@ const init = async ({
   user = process.env.GITHUB_USERNAME,
   backend,
   repo = name,
-  email = `${user}@gmail.com`,
+  email = `support@roamjs.com`,
 }: {
   name?: string;
   description?: string;
@@ -160,6 +160,7 @@ For full documentation, checkout https://roamjs.com/extensions/${extensionName}!
           path.join(root, ".github", "workflows", "main.yaml"),
           `name: Publish Extension
 on:
+  workflow_dispatch:
   push:
     branches: main
     paths:
@@ -170,6 +171,7 @@ on:
 env:
   API_URL: https://lambda.roamjs.com
   ROAMJS_DEVELOPER_TOKEN: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
+  ROAMJS_EMAIL: ${email}
   ROAMJS_RELEASE_TOKEN: \${{ secrets.ROAMJS_RELEASE_TOKEN }}
 
 jobs:
@@ -182,7 +184,7 @@ jobs:
       - name: build
         run: npx roamjs-scripts build 
       - name: publish
-        run: npx roamjs-scripts publish --email support@roamjs.com --commit \${{ github.sha }} --depot
+        run: npx roamjs-scripts publish --depot
 `
         );
       },
@@ -210,7 +212,6 @@ jobs:
     AWS_SECRET_ACCESS_KEY: \${{ secrets.DEPLOY_AWS_ACCESS_SECRET }}
     ROAMJS_DEVELOPER_TOKEN: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
     ROAMJS_EMAIL: ${email}
-    ROAMJS_EXTENSION_ID: ${extensionName}
   
   jobs:
     deploy:
@@ -457,7 +458,6 @@ export default runExtension({
             path.join(root, ".env"),
             `API_URL=http://localhost:3003/dev
   ROAMJS_EMAIL=${email}
-  ROAMJS_EXTENSION_ID=${extensionName}
   `
           )
         );

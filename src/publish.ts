@@ -40,6 +40,7 @@ const createGithubRelease = async ({
   tagName,
   depot,
   stripe,
+  branch = repo,
 }: {
   owner: string;
   repo: string;
@@ -47,6 +48,7 @@ const createGithubRelease = async ({
   tagName: string;
   depot?: boolean;
   stripe?: string;
+  branch?: string;
 }): Promise<void> => {
   const token = process.env.ROAMJS_RELEASE_TOKEN;
   if (token) {
@@ -82,7 +84,7 @@ const createGithubRelease = async ({
           console.log("Attempting to publish to Roam Depot...");
           const pr = await axios
             .get(
-              `https://api.github.com/repos/Roam-Research/roam-depot/pulls?head=${owner}:${repo}`
+              `https://api.github.com/repos/Roam-Research/roam-depot/pulls?head=${owner}:${branch}`
             )
             .then((r) => r.data[0]?.html_url);
           const cwd = process.cwd();
@@ -106,7 +108,7 @@ const createGithubRelease = async ({
           execSync(`git pull roam main`);
           execSync(`git push origin main`);
           if (pr) {
-            execSync(`git checkout ${repo}`);
+            execSync(`git checkout ${branch}`);
             execSync(`git rebase origin/main`);
             const manifest = fs.readFileSync(manifestFile).toString();
             fs.writeFileSync(
@@ -118,10 +120,10 @@ const createGithubRelease = async ({
             );
             execSync("git add --all");
             execSync(`git commit -m "Version ${tagName}"`);
-            execSync(`git push origin ${repo} -f`);
+            execSync(`git push origin ${branch} -f`);
             console.log(`Updated pull request: ${pr}`);
           } else {
-            execSync(`git checkout -b ${repo}`);
+            execSync(`git checkout -b ${branch}`);
             if (!fs.existsSync(`extensions/${owner}`))
               fs.mkdirSync(`extensions/${owner}`);
             if (fs.existsSync(manifestFile)) {
@@ -165,12 +167,12 @@ const createGithubRelease = async ({
             const title = `${name}: Version ${tagName}`;
             execSync("git add --all");
             execSync(`git commit -m "${title}"`);
-            execSync(`git push origin ${repo}`);
+            execSync(`git push origin ${branch}`);
             const url = await axios
               .post(
                 `https://api.github.com/repos/Roam-Research/roam-depot/pulls`,
                 {
-                  head: `${owner}:${repo}`,
+                  head: `${owner}:${branch}`,
                   base: "main",
                   title,
                 },
@@ -200,6 +202,7 @@ const publish = async ({
   marketplace,
   depot = marketplace,
   commit = process.env.GITHUB_SHA,
+  branch,
 }: {
   token?: string;
   email?: string;
@@ -214,6 +217,7 @@ const publish = async ({
   marketplace?: boolean;
   depot?: boolean;
   commit?: string;
+  branch?: string;
 }): Promise<number> => {
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
@@ -342,6 +346,7 @@ const publish = async ({
                 commit,
                 depot,
                 stripe: r.data.stripeAccount,
+                branch,
               })
             )
             .then(() => waitForCloudfront(cf))
