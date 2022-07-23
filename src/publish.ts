@@ -126,6 +126,11 @@ const createGithubRelease = async ({
             execSync(`git checkout -b ${branch}`);
             if (!fs.existsSync(`extensions/${owner}`))
               fs.mkdirSync(`extensions/${owner}`);
+            const name = repo
+              .replace(/^roamjs-/, "")
+              .split("-")
+              .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
+              .join(" ");
             if (fs.existsSync(manifestFile)) {
               const manifest = fs.readFileSync(manifestFile).toString();
               fs.writeFileSync(
@@ -139,11 +144,6 @@ const createGithubRelease = async ({
               const packageJson = JSON.parse(
                 fs.readFileSync(`${cwd}/package.json`).toString()
               );
-              const name = repo
-                .replace(/^roamjs-/, "")
-                .split("-")
-                .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
-                .join(" ");
               fs.writeFileSync(
                 manifestFile,
                 JSON.stringify(
