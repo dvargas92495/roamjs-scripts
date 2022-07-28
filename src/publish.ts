@@ -203,6 +203,7 @@ const publish = async ({
   depot = marketplace,
   commit = process.env.GITHUB_SHA,
   branch,
+  nocache = false,
 }: {
   token?: string;
   email?: string;
@@ -218,6 +219,7 @@ const publish = async ({
   depot?: boolean;
   commit?: string;
   branch?: string;
+  nocache?: boolean;
 }): Promise<number> => {
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
@@ -313,21 +315,23 @@ const publish = async ({
         })
       )
         .then(() =>
-          cloudfront
-            .createInvalidation({
-              DistributionId: r.data.distributionId,
-              InvalidationBatch: {
-                CallerReference: new Date().toJSON(),
-                Paths: {
-                  Quantity: 1,
-                  Items: [`/${destPath}/*`],
-                },
-              },
-            })
-            .then((i) => ({
-              Id: i.Invalidation?.Id || "",
-              DistributionId: r.data.distributionId,
-            }))
+          nocache
+            ? undefined
+            : cloudfront
+                .createInvalidation({
+                  DistributionId: r.data.distributionId,
+                  InvalidationBatch: {
+                    CallerReference: new Date().toJSON(),
+                    Paths: {
+                      Quantity: 1,
+                      Items: [`/${destPath}/*`],
+                    },
+                  },
+                })
+                .then((i) => ({
+                  Id: i.Invalidation?.Id || "",
+                  DistributionId: r.data.distributionId,
+                }))
         )
         .then((cf) =>
           axios
@@ -349,7 +353,7 @@ const publish = async ({
                 branch,
               })
             )
-            .then(() => waitForCloudfront(cf))
+            .then(() => cf ? waitForCloudfront(cf) : 'No cache invalidation')
         )
         .then((msg) => info(msg))
         .then(() => 0);
