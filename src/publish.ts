@@ -353,7 +353,7 @@ const publish = async ({
                 branch,
               })
             )
-            .then(() => cf ? waitForCloudfront(cf) : 'No cache invalidation')
+            .then(() => (cf ? waitForCloudfront(cf) : "No cache invalidation"))
         )
         .then((msg) => info(msg))
         .then(() => 0);
