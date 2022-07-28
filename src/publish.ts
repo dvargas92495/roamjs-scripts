@@ -5,7 +5,6 @@ import path from "path";
 import axios from "axios";
 import mime from "mime-types";
 import { S3 } from "@aws-sdk/client-s3";
-import { CloudFront } from "@aws-sdk/client-cloudfront";
 import toVersion from "./common/toVersion";
 import dotenv from "dotenv";
 import { execSync } from "child_process";
@@ -203,7 +202,6 @@ const publish = async ({
   depot = marketplace,
   commit = process.env.GITHUB_SHA,
   branch,
-  nocache = false,
 }: {
   token?: string;
   email?: string;
@@ -219,7 +217,6 @@ const publish = async ({
   depot?: boolean;
   commit?: string;
   branch?: string;
-  nocache?: boolean;
 }): Promise<number> => {
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
@@ -262,34 +259,6 @@ const publish = async ({
         credentials,
         region: "us-east-1",
       });
-      const cloudfront = new CloudFront({
-        apiVersion: "2020-05-31",
-        credentials,
-        region: "us-east-1",
-      });
-      const waitForCloudfront = (props: {
-        Id: string;
-        DistributionId: string;
-        trial?: number;
-      }) =>
-        new Promise<string>((resolve) => {
-          const { trial = 0, ...args } = props;
-          cloudfront
-            .getInvalidation(args)
-            .then((r) => r.Invalidation?.Status)
-            .then((status) => {
-              if (status === "Completed") {
-                resolve("Done!");
-              } else if (trial === 60) {
-                resolve("Ran out of time waiting for cloudfront...");
-              } else {
-                setTimeout(
-                  () => waitForCloudfront({ ...args, trial: trial + 1 }),
-                  1000
-                );
-              }
-            });
-        });
       const version = process.env.ROAMJS_VERSION || toVersion(new Date());
       return Promise.all(
         fileNames.flatMap((p) => {
@@ -315,25 +284,6 @@ const publish = async ({
         })
       )
         .then(() =>
-          nocache
-            ? undefined
-            : cloudfront
-                .createInvalidation({
-                  DistributionId: r.data.distributionId,
-                  InvalidationBatch: {
-                    CallerReference: new Date().toJSON(),
-                    Paths: {
-                      Quantity: 1,
-                      Items: [`/${destPath}/*`],
-                    },
-                  },
-                })
-                .then((i) => ({
-                  Id: i.Invalidation?.Id || "",
-                  DistributionId: r.data.distributionId,
-                }))
-        )
-        .then((cf) =>
           axios
             .get("https://lambda.roamjs.com/user", {
               headers: {
@@ -353,9 +303,7 @@ const publish = async ({
                 branch,
               })
             )
-            .then(() => (cf ? waitForCloudfront(cf) : "No cache invalidation"))
         )
-        .then((msg) => info(msg))
         .then(() => 0);
     });
 };
