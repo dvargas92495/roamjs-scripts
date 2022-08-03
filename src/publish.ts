@@ -107,6 +107,7 @@ const createGithubRelease = async ({
           execSync(`git pull roam main`);
           execSync(`git push origin main`);
           if (pr) {
+            console.log("Found existing PR");
             execSync(`git checkout ${branch}`);
             execSync(`git rebase origin/main`);
             const manifest = fs.readFileSync(manifestFile).toString();
@@ -122,6 +123,7 @@ const createGithubRelease = async ({
             execSync(`git push origin ${branch} -f`);
             console.log(`Updated pull request: ${pr}`);
           } else {
+            console.log("Creating new PR");
             execSync(`git checkout -b ${branch}`);
             if (!fs.existsSync(`extensions/${owner}`))
               fs.mkdirSync(`extensions/${owner}`);
@@ -166,7 +168,7 @@ const createGithubRelease = async ({
             const title = `${name}: Version ${tagName}`;
             execSync("git add --all");
             execSync(`git commit -m "${title}"`);
-            execSync(`git push origin ${branch}`);
+            execSync(`git push origin ${branch} -f`);
             const url = await axios
               .post(
                 `https://api.github.com/repos/Roam-Research/roam-depot/pulls`,
