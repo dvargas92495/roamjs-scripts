@@ -65,6 +65,8 @@ const build = ({
       ""
     )}ROAMJS_VERSION=${version}\n`
   );
+  process.env.ROAMJS_EXTENSION_ID =
+    process.env.ROAMJS_EXTENSION_ID || "unknown";
   if (depot) {
     process.env.ROAM_MARKETPLACE = "true";
     process.env.ROAM_DEPOT = "true";

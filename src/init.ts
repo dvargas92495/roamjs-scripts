@@ -10,7 +10,7 @@ const EXTENSION_NAME_REGEX = /^[a-z][a-z0-9-]*$/;
 const init = async ({
   name,
   description,
-  user = process.env.GITHUB_USERNAME,
+  user = process.env.GITHUB_REPOSITORY_OWNER,
   backend,
   repo = name,
   email = `support@roamjs.com`,

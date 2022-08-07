@@ -20,14 +20,17 @@ const dev = async ({
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
-  process.env.ROAMJS_VERSION = "development";
+  process.env.ROAMJS_VERSION = process.env.ROAMJS_VERSION || "development";
+  process.env.ROAMJS_EXTENSION_ID =
+    process.env.ROAMJS_EXTENSION_ID || "unknown";
   if (depot) {
     process.env.ROAM_MARKETPLACE = "true";
     process.env.ROAM_DEPOT = "true";
-    process.env.API_URL = "https://lambda.roamjs.com";
+    process.env.API_URL = process.env.API_URL || "https://lambda.roamjs.com";
   } else {
     process.env.ROAM_MARKETPLACE = "";
     process.env.ROAM_DEPOT = "";
+    process.env.API_URL = process.env.API_URL || "http://localhost:3003/dev";
   }
   return new Promise((resolve, reject) => {
     getBaseConfig()
