@@ -2,6 +2,7 @@ import appPath from "./common/appPath";
 import webpack from "webpack";
 import webpackDevServer from "webpack-dev-server";
 import getBaseConfig from "./common/getBaseConfig";
+import getPackageName from "./common/getPackageName";
 
 const dev = async ({
   host: inputHost,
@@ -22,7 +23,7 @@ const dev = async ({
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
   process.env.ROAMJS_VERSION = process.env.ROAMJS_VERSION || "development";
   process.env.ROAMJS_EXTENSION_ID =
-    process.env.ROAMJS_EXTENSION_ID || "unknown";
+    process.env.ROAMJS_EXTENSION_ID || getPackageName();
   if (depot) {
     process.env.ROAM_MARKETPLACE = "true";
     process.env.ROAM_DEPOT = "true";

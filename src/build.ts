@@ -4,6 +4,7 @@ import fs from "fs";
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer";
 import TerserWebpackPlugin from "terser-webpack-plugin";
 import getBaseConfig from "./common/getBaseConfig";
+import getPackageName from "./common/getPackageName";
 
 const optimization: webpack.Configuration["optimization"] = {
   minimizer: [
@@ -66,7 +67,7 @@ const build = ({
     )}ROAMJS_VERSION=${version}\n`
   );
   process.env.ROAMJS_EXTENSION_ID =
-    process.env.ROAMJS_EXTENSION_ID || "unknown";
+    process.env.ROAMJS_EXTENSION_ID || getPackageName();
   if (depot) {
     process.env.ROAM_MARKETPLACE = "true";
     process.env.ROAM_DEPOT = "true";
