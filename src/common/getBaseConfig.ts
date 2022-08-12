@@ -72,7 +72,7 @@ const getBaseConfig = (): Promise<
     externalsType: "window",
     resolve: {
       modules: ["node_modules", appPath("node_modules")],
-      extensions: [".ts", ".js", ".tsx"],
+      extensions: [".ts", ".js", ".tsx", ".jsx"],
     },
     plugins: [getDotEnvPlugin()],
     entry: {
@@ -105,7 +105,7 @@ const getBaseConfig = (): Promise<
     module: {
       rules: [
         {
-          test: /\.tsx?$/,
+          test: /\.[jt]sx?$/,
           use: [
             {
               loader: "shebang-loader",
