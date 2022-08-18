@@ -118,6 +118,12 @@ const getBaseConfig = (): Promise<
                 presets: ["@babel/preset-env", "@babel/preset-react"],
               },
             },
+          ],
+          exclude: /node_modules/,
+        },
+        {
+          test: /\.tsx?$/,
+          use: [
             {
               loader: "ts-loader",
               options: {
