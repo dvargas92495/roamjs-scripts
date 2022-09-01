@@ -49,11 +49,13 @@ const build = ({
   analyze,
   marketplace,
   depot = marketplace,
+  max = "5000000",
 }: {
   analyze?: boolean;
+  max?: string;
+  depot?: boolean;
   // @deprecated
   marketplace?: boolean;
-  depot?: boolean;
 }): Promise<number> => {
   const version = toVersion();
   const envExisting = fs.existsSync(".env")
@@ -93,14 +95,15 @@ const build = ({
         } else {
           baseConfig.optimization = optimization;
         }
+        const maxEntrypointSize = Number(max) || 5000000;
         webpack(
           {
             ...baseConfig,
             mode: "production",
             performance: {
               hints: analyze ? "warning" : "error",
-              maxEntrypointSize: 5000000,
-              maxAssetSize: 5000000,
+              maxEntrypointSize,
+              maxAssetSize: maxEntrypointSize,
             },
             stats: "verbose",
           },
