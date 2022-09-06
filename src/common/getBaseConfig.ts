@@ -67,6 +67,7 @@ const getBaseConfig = (): Promise<
       nanoid: "Nanoid",
       react: "React",
       "react-dom": "ReactDOM",
+      "react-dom/client": "ReactDOM",
       tslib: "TSLib",
     } as Record<string, string | string[]>,
     externalsType: "window",
