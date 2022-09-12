@@ -233,7 +233,7 @@ const publish = async ({
         "README.md",
         "CHANGELOG.md",
         "package.json",
-      ]
+      ].filter((f) => fs.existsSync(f))
     : readDir(sourcePath);
 
   if (fileNames.length > 100) {
@@ -274,7 +274,7 @@ const publish = async ({
       return Promise.all<unknown[]>(
         fileNames
           .flatMap<unknown>((p) => {
-            const fileName = depot ? p : p.substring(sourcePath.length);
+            const fileName = depot ? `/${p}` : p.substring(sourcePath.length);
             const Key = `${destPath}${fileName}`;
             const uploadProps = {
               Bucket: "roamjs.com",
@@ -298,13 +298,9 @@ const publish = async ({
             depot
               ? Promise.resolve(new JSZip()).then((zip) => {
                   fileNames.forEach((f) => {
-                    if (fs.existsSync(f)) {
-                      console.log(`Zipping ${f}...`);
-                      const content = fs.readFileSync(f);
-                      zip.file(f, content, { date: new Date("09-24-1995") });
-                    } else {
-                      console.log(`Skipping ${f}...`);
-                    }
+                    console.log(`Zipping ${f}...`);
+                    const content = fs.readFileSync(f);
+                    zip.file(f, content, { date: new Date("09-24-1995") });
                   });
                   return zip
                     .generateAsync({
