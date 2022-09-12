@@ -8,6 +8,7 @@ import { S3 } from "@aws-sdk/client-s3";
 import toVersion from "./common/toVersion";
 import dotenv from "dotenv";
 import { execSync } from "child_process";
+import JSZip from "jszip";
 dotenv.config();
 
 type Credentials = {
@@ -223,9 +224,17 @@ const publish = async ({
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
     : token;
-  const sourcePath = appPath(source);
+  const sourcePath = depot ? appPath(".") : appPath(source);
   info(`Source Path: ${sourcePath}`);
-  const fileNames = readDir(sourcePath);
+  const fileNames = depot
+    ? [
+        "extension.js",
+        "extension.css",
+        "README.md",
+        "CHANGELOG.md",
+        "package.json",
+      ]
+    : readDir(sourcePath);
 
   if (fileNames.length > 100) {
     return Promise.reject(
@@ -262,28 +271,58 @@ const publish = async ({
         region: "us-east-1",
       });
       const version = process.env.ROAMJS_VERSION || toVersion(new Date());
-      return Promise.all(
-        fileNames.flatMap((p) => {
-          const fileName = p.substring(sourcePath.length);
-          const Key = `${destPath}${fileName}`;
-          const uploadProps = {
-            Bucket: "roamjs.com",
-            ContentType: mime.lookup(fileName) || undefined,
-          };
-          info(`Uploading version ${version} of ${p} to ${Key}...`);
-          return [
-            s3.putObject({
-              Key: `${destPath}/${version}${fileName}`,
-              ...uploadProps,
-              Body: fs.createReadStream(p),
-            }),
-            s3.putObject({
-              Key,
-              ...uploadProps,
-              Body: fs.createReadStream(p),
-            }),
-          ];
-        })
+      return Promise.all<unknown[]>(
+        fileNames
+          .flatMap<unknown>((p) => {
+            const fileName = depot ? p : p.substring(sourcePath.length);
+            const Key = `${destPath}${fileName}`;
+            const uploadProps = {
+              Bucket: "roamjs.com",
+              ContentType: mime.lookup(fileName) || undefined,
+            };
+            info(`Uploading version ${version} of ${p} to ${Key}...`);
+            return [
+              s3.putObject({
+                Key: `${destPath}/${version}${fileName}`,
+                ...uploadProps,
+                Body: fs.createReadStream(p),
+              }),
+              s3.putObject({
+                Key,
+                ...uploadProps,
+                Body: fs.createReadStream(p),
+              }),
+            ];
+          })
+          .concat([
+            depot
+              ? Promise.resolve(new JSZip()).then((zip) => {
+                  fileNames.forEach((f) => {
+                    if (fs.existsSync(f)) {
+                      console.log(`Zipping ${f}...`);
+                      const content = fs.readFileSync(f);
+                      zip.file(f, content, { date: new Date("09-24-1995") });
+                    } else {
+                      console.log(`Skipping ${f}...`);
+                    }
+                  });
+                  return zip
+                    .generateAsync({
+                      type: "nodebuffer",
+                      compression: "DEFLATE",
+                      mimeType: "application/zip",
+                    })
+                    .then((Body) =>
+                      s3.putObject({
+                        Key: `downloads/${destPath}.zip`,
+                        Bucket: "roamjs.com",
+                        ContentType: "application/zip",
+                        Body,
+                      })
+                    );
+                })
+              : Promise.resolve(),
+          ])
       )
         .then(() =>
           axios
