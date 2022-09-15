@@ -41,6 +41,7 @@ const createGithubRelease = async ({
   depot,
   stripe,
   branch = repo,
+  proxy = owner,
 }: {
   owner: string;
   repo: string;
@@ -49,6 +50,7 @@ const createGithubRelease = async ({
   depot?: boolean;
   stripe?: string;
   branch?: string;
+  proxy?: string;
 }): Promise<void> => {
   const token = process.env.ROAMJS_RELEASE_TOKEN;
   if (token) {
@@ -93,7 +95,7 @@ const createGithubRelease = async ({
             `git clone https://${owner}:${token}@github.com/${owner}/roam-depot.git`
           );
           process.chdir("roam-depot");
-          const manifestFile = `extensions/${owner}/${repo.replace(
+          const manifestFile = `extensions/${proxy}/${repo.replace(
             /^roamjs-/,
             ""
           )}.json`;
@@ -126,8 +128,8 @@ const createGithubRelease = async ({
           } else {
             console.log("Creating new PR");
             execSync(`git checkout -b ${branch}`);
-            if (!fs.existsSync(`extensions/${owner}`))
-              fs.mkdirSync(`extensions/${owner}`);
+            if (!fs.existsSync(`extensions/${proxy}`))
+              fs.mkdirSync(`extensions/${proxy}`);
             const name = repo
               .replace(/^roamjs-/, "")
               .split("-")
@@ -205,6 +207,7 @@ const publish = async ({
   depot = marketplace,
   commit = process.env.GITHUB_SHA,
   branch,
+  proxy,
 }: {
   token?: string;
   email?: string;
@@ -220,6 +223,7 @@ const publish = async ({
   depot?: boolean;
   commit?: string;
   branch?: string;
+  proxy?: string;
 }): Promise<number> => {
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
@@ -338,6 +342,7 @@ const publish = async ({
                 depot,
                 stripe: r.data.stripeAccount,
                 branch,
+                proxy,
               })
             )
         )
