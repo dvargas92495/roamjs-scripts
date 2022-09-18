@@ -26,7 +26,7 @@ const args = ({ env = [], ...params }: CliArgs = {}): CliArgs => {
       "tslib=window.TSLib",
     ],
     out: "extension",
-    env: ["ROAM_DEPOT", "BLUEPRINT_NAMESPACE", "ROAMJS_EXTENSION_ID"].concat(
+    env: ["ROAM_DEPOT", "BLUEPRINT_NAMESPACE", "ROAMJS_EXTENSION_ID", "API_URL"].concat(
       env
     ),
     mirror: ".",
