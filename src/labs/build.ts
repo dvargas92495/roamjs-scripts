@@ -18,10 +18,7 @@ const build = (args: CliArgs = {}): Promise<number> => {
     : "";
   fs.writeFileSync(
     ".env",
-    `${envExisting.replace(
-      /VERSION=[\d-]+\n/gs,
-      ""
-    )}VERSION=${version}\n`
+    `${envExisting.replace(/VERSION=[\d-]+\n/gs, "")}VERSION=${version}\n`
   );
   return compile({ ...args, opts: { minify: true } }).then(() => {
     console.log("done");

@@ -22,7 +22,7 @@ const dev = async ({
   depot?: boolean;
   labs?: boolean;
 }): Promise<number> => {
-  if (labs) return labsDev(args())
+  if (labs) return labsDev(args());
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
