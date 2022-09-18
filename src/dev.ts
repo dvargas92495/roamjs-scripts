@@ -3,6 +3,8 @@ import webpack from "webpack";
 import webpackDevServer from "webpack-dev-server";
 import getBaseConfig from "./common/getBaseConfig";
 import getPackageName from "./common/getPackageName";
+import labsDev from "./labs/dev";
+import args from "./common/args";
 
 const dev = async ({
   host: inputHost,
@@ -10,6 +12,7 @@ const dev = async ({
   hot: hotReloading = false,
   marketplace = false,
   depot = marketplace,
+  labs = false,
 }: {
   host?: string;
   port?: string;
@@ -17,7 +20,9 @@ const dev = async ({
   // @deprecated
   marketplace?: boolean;
   depot?: boolean;
+  labs?: boolean;
 }): Promise<number> => {
+  if (labs) return labsDev(args())
   const port = Number(inputPort) || 8000;
   const host = inputHost || "127.0.0.1";
   process.env.NODE_ENV = process.env.NODE_ENV || "development";

@@ -9,6 +9,7 @@ import toVersion from "./common/toVersion";
 import dotenv from "dotenv";
 import { execSync } from "child_process";
 import JSZip from "jszip";
+import labPublish from "./labs/publish";
 dotenv.config();
 
 type Credentials = {
@@ -208,6 +209,7 @@ const publish = async ({
   commit = process.env.GITHUB_SHA,
   branch,
   proxy,
+  labs = false,
 }: {
   token?: string;
   email?: string;
@@ -224,7 +226,13 @@ const publish = async ({
   commit?: string;
   branch?: string;
   proxy?: string;
+  labs?: boolean;
 }): Promise<number> => {
+  if (labs)
+    return labPublish({
+      path: destPathInput.replace(/^roamjs-/, "").replace(/\/$/, ""),
+      domain: "https://roamjs.com/downloads",
+    });
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
     : token;

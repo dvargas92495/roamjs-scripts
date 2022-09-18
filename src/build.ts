@@ -5,6 +5,8 @@ import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer";
 import TerserWebpackPlugin from "terser-webpack-plugin";
 import getBaseConfig from "./common/getBaseConfig";
 import getPackageName from "./common/getPackageName";
+import labsBuild from "./labs/build";
+import args from "./common/args";
 
 const optimization: webpack.Configuration["optimization"] = {
   minimizer: [
@@ -50,13 +52,16 @@ const build = ({
   marketplace,
   depot = marketplace,
   max = "5000000",
+  labs = false,
 }: {
   analyze?: boolean;
   max?: string;
   depot?: boolean;
   // @deprecated
   marketplace?: boolean;
+  labs?: boolean;
 }): Promise<number> => {
+  if (labs) return labsBuild(args({ analyze, max }));
   const version = toVersion();
   const envExisting = fs.existsSync(".env")
     ? fs.readFileSync(".env").toString()
