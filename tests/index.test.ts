@@ -1,10 +1,15 @@
-import run from "../src";
+// import { spawn } from "child_process";
+import build from "../src/build";
+import { test, expect } from "@playwright/test";
 
-test("Runs Build", (done) => {
-  jest.setTimeout(120000);
+test("Runs Build", async () => {
+  // const exitCode = await new Promise((resolve) => {
+  //   const proc = spawn("ts-node ../../src/index.ts build", {
+  //     cwd: "tests/mock",
+  //   });
+  //   proc.on("exit", resolve);
+  // });
   process.chdir("tests/mock");
-  run("build", []).then((code) => {
-    expect(code).toBe(0);
-    done();
-  });
+  const exitCode = await build({ labs: true, analyze: true });
+  expect(exitCode).toBe(0);
 });

@@ -61,7 +61,9 @@ const build = ({
   marketplace?: boolean;
   labs?: boolean;
 }): Promise<number> => {
-  if (labs) return labsBuild(args({ analyze, max }));
+  if (labs) {
+    return labsBuild(args({ analyze, max }));
+  }
   const version = toVersion();
   const envExisting = fs.existsSync(".env")
     ? fs.readFileSync(".env").toString()

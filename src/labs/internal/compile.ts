@@ -75,6 +75,7 @@ const compile = ({
   format,
   mirror,
   env,
+  analyze,
   opts = {},
 }: CliArgs & { opts?: esbuild.BuildOptions }): Promise<esbuild.BuildResult> => {
   const rootDir = fs
@@ -105,6 +106,7 @@ const compile = ({
 
   return esbuild
     .build({
+      absWorkingDir: process.cwd(),
       entryPoints: out
         ? {
             [out]: `./src/${entryTs}`,
@@ -146,6 +148,7 @@ const compile = ({
           Object.fromEntries(externalModules.filter((e) => e.length === 2))
         ),
       ],
+      metafile: analyze,
       ...opts,
     })
     .then((r) => {

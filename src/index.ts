@@ -4,7 +4,7 @@ import dev from "./dev";
 import init from "./init";
 import lambdas from "./lambdas";
 import publish from "./publish";
-import roamjsTest from "./test";
+import test from "./test";
 
 const run = async (command: string, args: string[]): Promise<number> => {
   const opts = Object.fromEntries(
@@ -31,7 +31,7 @@ const run = async (command: string, args: string[]): Promise<number> => {
     case "publish":
       return publish(opts);
     case "test":
-      return roamjsTest(opts);
+      return test();
     default:
       console.error("Command", command, "is unsupported");
       return 1;

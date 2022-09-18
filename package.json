@@ -13,7 +13,7 @@
     "prebuild": "npm run lint",
     "build": "tsc",
     "postbuild": "node postbuild.js",
-    "test": "cross-env NODE_ENV=test jest --config jestconfig.json",
+    "test": "playwright test --config=src/labs/internal/playwright.config.ts",
     "posttest": "rimraf build",
     "prepublishOnly": "npm t"
   },
@@ -58,7 +58,7 @@
     "cross-spawn": "^7.0.3",
     "css-loader": "^5.2.5",
     "dotenv": "^8.4.0",
-    "esbuild": "^0.12.22",
+    "esbuild": "^0.15.8",
     "file-loader": "^6.2.0",
     "git-repo-name": "^1.0.1",
     "git-user-name": "^2.0.0",
