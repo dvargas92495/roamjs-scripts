@@ -14,6 +14,15 @@ declare global {
   }
 }
 
+const readDir = (s: string): string[] =>
+  fs.existsSync(s)
+    ? fs
+        .readdirSync(s, { withFileTypes: true })
+        .flatMap((f) =>
+          f.isDirectory() ? readDir(`${s}/${f.name}`) : [`${s}/${f.name}`]
+        )
+    : [];
+
 export type CliArgs = {
   out?: string;
   external?: string | string[];
@@ -185,8 +194,8 @@ const compile = ({
         }
         if (mirror) {
           if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
-          fs.readdirSync("dist").forEach((f) =>
-            fs.cpSync(appPath(path.join(`dist`, f)), path.join(mirror, f))
+          readDir("dist").forEach((f) =>
+            fs.cpSync(appPath(f), path.join(mirror, f.replace(/^dist\//, "")))
           );
         }
       };

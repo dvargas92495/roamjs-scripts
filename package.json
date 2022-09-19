@@ -2,27 +2,20 @@
   "name": "roamjs-scripts",
   "description": "Description for roamjs-scripts",
   "version": "0.23.1",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint . --ext .ts",
     "preversion": "npm run lint",
     "version": "npm run format && git add -A src",
     "postversion": "git push origin main && git push --tags",
-    "prebuild": "npm run lint",
-    "build": "tsc",
-    "postbuild": "node postbuild.js",
     "test": "playwright test --config=src/labs/internal/playwright.config.ts",
-    "posttest": "rimraf build",
     "prepublishOnly": "npm t"
   },
   "license": "MIT",
-  "files": [
-    "/dist"
-  ],
   "bin": {
-    "roamjs-scripts": "./dist/index.js"
+    "roamjs-scripts": "./index.js"
   },
   "devDependencies": {
     "@types/cross-spawn": "^6.0.2",
