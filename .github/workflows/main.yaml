@@ -23,6 +23,8 @@ jobs:
         run: npm run lint
       - name: build
         run: npx tsc
+      - name: test
+        run: npm t
       - name: prepare
         run: cp LICENSE README.md package.json src/default.tsconfig.json dist
       - name: publish

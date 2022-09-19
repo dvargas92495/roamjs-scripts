@@ -11,7 +11,6 @@
     "version": "npm run format && git add -A src",
     "postversion": "git push origin main && git push --tags",
     "test": "playwright test --config=src/labs/internal/playwright.config.ts",
-    "prepublishOnly": "npm t"
   },
   "license": "MIT",
   "bin": {
