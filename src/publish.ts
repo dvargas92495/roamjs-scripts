@@ -231,7 +231,7 @@ const publish = async ({
   if (labs)
     return labPublish({
       path: destPathInput.replace(/^roamjs-/, "").replace(/\/$/, ""),
-      domain: "https://roamjs.com/downloads",
+      domain: "roamjs.com/downloads",
     });
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
