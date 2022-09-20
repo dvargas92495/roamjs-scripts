@@ -31,7 +31,7 @@ const run = async (command: string, args: string[]): Promise<number> => {
     case "publish":
       return publish(opts);
     case "test":
-      return test();
+      return test(opts);
     default:
       console.error("Command", command, "is unsupported");
       return 1;

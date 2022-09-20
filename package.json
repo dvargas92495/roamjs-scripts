@@ -10,7 +10,7 @@
     "preversion": "npm run lint",
     "version": "npm run format && git add -A src",
     "postversion": "git push origin main && git push --tags",
-    "test": "playwright test --config=src/labs/internal/playwright.config.ts"
+    "test": "playwright test --config=node_modules/@samepage/testing/playwright.config.js"
   },
   "license": "MIT",
   "bin": {
