@@ -1,4 +1,4 @@
-import type { CliArgs } from "../labs/internal/compile";
+import type { CliArgs } from "@samepage/scripts/internal/compile";
 import getPackageName from "./getPackageName";
 
 const args = ({ env = [], ...params }: CliArgs = {}): CliArgs => {

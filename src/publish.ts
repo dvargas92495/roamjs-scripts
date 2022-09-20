@@ -9,7 +9,7 @@ import toVersion from "./common/toVersion";
 import dotenv from "dotenv";
 import { execSync } from "child_process";
 import JSZip from "jszip";
-import labPublish from "./labs/publish";
+import labPublish from "@samepage/scripts/publish";
 dotenv.config();
 
 type Credentials = {

@@ -5,7 +5,7 @@ import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer";
 import TerserWebpackPlugin from "terser-webpack-plugin";
 import getBaseConfig from "./common/getBaseConfig";
 import getPackageName from "./common/getPackageName";
-import labsBuild from "./labs/build";
+import labsBuild from "@samepage/scripts/build";
 import args from "./common/args";
 
 const optimization: webpack.Configuration["optimization"] = {

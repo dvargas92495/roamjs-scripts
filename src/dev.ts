@@ -3,7 +3,7 @@ import webpack from "webpack";
 import webpackDevServer from "webpack-dev-server";
 import getBaseConfig from "./common/getBaseConfig";
 import getPackageName from "./common/getPackageName";
-import labsDev from "./labs/dev";
+import labsDev from "@samepage/scripts/dev";
 import args from "./common/args";
 
 const dev = async ({
