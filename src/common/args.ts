@@ -25,6 +25,7 @@ const args = ({ env = [], ...params }: CliArgs = {}): CliArgs => {
       "react-youtube=window.ReactYoutube",
       "tslib=window.TSLib",
     ],
+    include: ["package.json", "README.md"],
     out: "extension",
     env: [
       "ROAM_DEPOT",
