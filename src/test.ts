@@ -11,6 +11,7 @@ const test = ({
       env: ["ROAM_PASSWORD", "ROAM_USERNAME"],
     }),
     forward,
+    path: "roam",
   });
 };
 
