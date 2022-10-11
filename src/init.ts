@@ -11,14 +11,12 @@ const init = async ({
   name,
   description,
   user = process.env.GITHUB_REPOSITORY_OWNER,
-  backend,
   repo = name,
   email = `support@roamjs.com`,
 }: {
   name?: string;
   description?: string;
   user?: string;
-  backend?: boolean;
   repo?: string;
   email?: string;
 }): Promise<number> => {
@@ -41,7 +39,6 @@ const init = async ({
   const extensionDescription =
     description || `Description for ${extensionName}.`;
   const extensionExists = fs.existsSync(name);
-  const terraformOrganizationToken = process.env.TERRAFORM_ORGANIZATION_TOKEN;
   const tasks = [
     {
       title: "Make Project Directory",
@@ -59,16 +56,7 @@ const init = async ({
           scripts: {
             "prebuild:roam": "npm install",
             "build:roam": "roamjs-scripts build --depot",
-            "dev:roam": "roamjs-scripts dev --depot",
-            start: "roamjs-scripts dev",
-            ...(backend
-              ? {
-                  preserver: "roamjs-scripts lambdas --build",
-                  lambdas: "roamjs-scripts lambdas",
-                  server: "localhost-lambdas",
-                  start: "concurrently npm:dev npm:server",
-                }
-              : {}),
+            start: "roamjs-scripts dev --depot",
           },
           license: "MIT",
         };
@@ -81,23 +69,6 @@ const init = async ({
         );
       },
       skip: () => extensionExists,
-    },
-    {
-      title: "Add backend to package.json",
-      task: () => {
-        const packageJson = JSON.parse(
-          fs.readFileSync(path.join(root, "package.json")).toString()
-        );
-        packageJson.scripts.lambdas = "roamjs-scripts lambdas";
-        packageJson.scripts.server = "localhost-lambdas";
-        return Promise.resolve(
-          fs.writeFileSync(
-            path.join(root, "package.json"),
-            JSON.stringify(packageJson, null, 2) + os.EOL
-          )
-        );
-      },
-      skip: () => !backend,
     },
     {
       title: "Write README.md",
@@ -135,22 +106,6 @@ For full documentation, checkout https://roamjs.com/extensions/${extensionName}!
       skip: () => extensionExists,
     },
     {
-      title: "Add backend to tsconfig.json",
-      task: () => {
-        const tsconfig = JSON.parse(
-          fs.readFileSync(path.join(root, "tsconfig.json")).toString()
-        );
-        tsconfig.include.push("lambdas");
-        return Promise.resolve(
-          fs.writeFileSync(
-            path.join(root, "tsconfig.json"),
-            JSON.stringify(tsconfig, null, 2) + os.EOL
-          )
-        );
-      },
-      skip: () => !backend,
-    },
-    {
       title: "Write main.yaml",
       task: () => {
         fs.mkdirSync(path.join(root, ".github", "workflows"), {
@@ -172,6 +127,7 @@ env:
   API_URL: https://lambda.roamjs.com
   ROAMJS_DEVELOPER_TOKEN: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
   ROAMJS_EMAIL: ${email}
+  ROAMJS_EXTENSION_ID: ${extensionName}
   ROAMJS_RELEASE_TOKEN: \${{ secrets.ROAMJS_RELEASE_TOKEN }}
 
 jobs:
@@ -182,7 +138,7 @@ jobs:
       - name: install
         run: npm install
       - name: build
-        run: npx roamjs-scripts build 
+        run: npx roamjs-scripts build --depot
       - name: publish
         run: npx roamjs-scripts publish --depot
 `
@@ -191,61 +147,17 @@ jobs:
       skip: () => extensionExists || !process.env.ROAMJS_DEVELOPER_TOKEN,
     },
     {
-      title: "Write lambda.yaml",
-      task: () => {
-        fs.mkdirSync(path.join(root, ".github", "workflows"), {
-          recursive: true,
-        });
-        return fs.writeFileSync(
-          path.join(root, ".github", "workflows", "lambda.yaml"),
-          `name: Publish Lambda
-  on:
-    push:
-      branches: main
-      paths:
-        - "lambdas/**"
-        - "package.json"
-        - ".github/workflows/lambda.yaml"
-  
-  env:
-    AWS_ACCESS_KEY_ID: \${{ secrets.DEPLOY_AWS_ACCESS_KEY }}
-    AWS_SECRET_ACCESS_KEY: \${{ secrets.DEPLOY_AWS_ACCESS_SECRET }}
-    ROAMJS_DEVELOPER_TOKEN: \${{ secrets.ROAMJS_DEVELOPER_TOKEN }}
-    ROAMJS_EMAIL: ${email}
-  
-  jobs:
-    deploy:
-      runs-on: ubuntu-18.04
-      steps:
-        - uses: actions/checkout@v2
-        - name: Use Node.js 16.14.0
-          uses: actions/setup-node@v1
-          with:
-            node-version: 16.14.0
-        - name: install
-          run: npm install
-        - name: Deploy
-          run: npm run lambdas
-  `
-        );
-      },
-      skip: () => !backend,
-    },
-    {
       title: "Write .gitignore",
       task: () => {
         return fs.writeFileSync(
           path.join(root, ".gitignore"),
           `node_modules
-  build
-  dist
-  out
-  .env
-  .env.local
-  extension.js
-  extension.js.LICENSE.txt
-  report.html
-  stats.json
+build
+dist
+out
+.env
+extension.js
+extension.js.LICENSE.txt
   `
         );
       },
@@ -306,30 +218,6 @@ jobs:
       skip: () => extensionExists,
     },
     {
-      title: "Install Backend Dev Packages",
-      task: () => {
-        process.chdir(root);
-        return new Promise<void>((resolve, reject) => {
-          const dependencies = ["@types/aws-lambda", "localhost-lambdas"];
-          const child = spawn(
-            "npm",
-            ["install", "--save-dev", "--quiet"].concat(dependencies),
-            {
-              stdio: "inherit",
-            }
-          );
-          child.on("close", (code) => {
-            if (code !== 0) {
-              reject(code);
-              return;
-            }
-            resolve();
-          });
-        });
-      },
-      skip: () => !backend,
-    },
-    {
       title: "Install Packages",
       task: () => {
         process.chdir(root);
@@ -358,136 +246,20 @@ jobs:
         fs.mkdirSync(path.join(root, "src"));
         return fs.writeFileSync(
           path.join(root, "src", "index.ts"),
-          `import toConfigPageName from "roamjs-components/util/toConfigPageName";
-import runExtension from "roamjs-components/util/runExtension";
-import { createConfigObserver } from "roamjs-components/components/ConfigPage";
+          `import runExtension from "roamjs-components/util/runExtension";
 
-const extensionId = "${extensionName}";
-const CONFIG = toConfigPageName(extensionId);
 export default runExtension({
-  extensionId, 
-  run: () => {
-    createConfigObserver({ title: CONFIG, config: { tabs: [] } });
+  run: (args) => {
+    args.extensionAPI.settings.panel.create({
+      tabTitle: "${extensionName}",
+      settings: [],
+    });
   },
-  unload: () => {},
 });
-  `
+`
         );
       },
       skip: () => extensionExists,
-    },
-    {
-      title: "Write main.tf",
-      task: () => {
-        return Promise.resolve(
-          fs.writeFileSync(
-            path.join(root, "main.tf"),
-            `terraform {
-    backend "remote" {
-      hostname = "app.terraform.io"
-      organization = "VargasArts"
-      workspaces {
-        prefix = "${name}"
-      }
-    }
-    required_providers {
-      github = {
-        source = "integrations/github"
-        version = "4.2.0"
-      }
-    }
-  }
-  
-  variable "aws_access_token" {
-    type = string
-  }
-  
-  variable "aws_secret_token" {
-    type = string
-  }
-  
-  variable "developer_token" {
-    type = string
-  }
-  
-  variable "github_token" {
-    type = string
-  }
-  
-  provider "aws" {
-    region = "us-east-1"
-    access_key = var.aws_access_token
-    secret_key = var.aws_secret_token
-  }
-  
-  provider "github" {
-      owner = "dvargas92495"
-      token = var.github_token
-  }
-  
-  module "roamjs_lambda" {
-    source = "dvargas92495/lambda/roamjs"
-    providers = {
-      aws = aws
-      github = github
-    }
-  
-    name = "${extensionName}"
-    lambdas = [
-      { 
-        path = "${extensionName}", 
-        method = "post"
-      },
-    ]
-    aws_access_token = var.aws_access_token
-    aws_secret_token = var.aws_secret_token
-    github_token     = var.github_token
-    developer_token  = var.developer_token
-  }
-  `
-          )
-        );
-      },
-      skip: () => !backend,
-    },
-    {
-      title: "Write .env",
-      task: () => {
-        return Promise.resolve(
-          fs.writeFileSync(
-            path.join(root, ".env"),
-            `API_URL=http://localhost:3003/dev
-  ROAMJS_EMAIL=${email}
-  `
-          )
-        );
-      },
-      skip: () => !backend,
-    },
-    {
-      title: "Write lambdas",
-      task: () => {
-        fs.mkdirSync(path.join(root, "lambdas"));
-        return fs.writeFileSync(
-          path.join(root, "lambdas", `${extensionName}_post.ts`),
-          `import { APIGatewayProxyHandler } from "aws-lambda";
-  
-  export const handler: APIGatewayProxyHandler = async () => {
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-      }),
-      headers: {
-        "Access-Control-Allow-Origin": "https://roamresearch.com",
-        "Access-Control-Allow-Methods": "POST",
-      },
-    };
-  }
-  `
-        );
-      },
-      skip: () => !backend,
     },
     {
       title: "Create a github repo",
@@ -552,7 +324,6 @@ export default runExtension({
       skip: () =>
         !user ||
         !process.env.GITHUB_TOKEN ||
-        backend ||
         extensionExists ||
         !process.env.ROAMJS_DEVELOPER_TOKEN,
     },
@@ -620,93 +391,6 @@ export default runExtension({
         return sync(`git push origin main`, { stdio: "ignore" });
       },
       skip: () => !user || extensionExists,
-    },
-    {
-      title: "Create Workspace",
-      task: () => {
-        const tfOpts = {
-          headers: {
-            Authorization: `Bearer ${terraformOrganizationToken}`,
-            "Content-Type": "application/vnd.api+json",
-          },
-        };
-        return axios
-          .get<{
-            data: { attributes: { "service-provider": string }; id: string }[];
-          }>(
-            "https://app.terraform.io/api/v2/organizations/VargasArts/oauth-clients",
-            tfOpts
-          )
-          .then(
-            (r) =>
-              r.data.data.find(
-                (cl) => cl.attributes["service-provider"] === "github"
-              )?.id
-          )
-          .then((id) =>
-            axios
-              .get(
-                `https://app.terraform.io/api/v2/oauth-clients/${id}/oauth-tokens`,
-                tfOpts
-              )
-              .then((r) => r.data.data[0].id)
-          )
-          .then((id) =>
-            axios
-              .post(
-                "https://app.terraform.io/api/v2/organizations/VargasArts/workspaces",
-                {
-                  data: {
-                    type: "workspaces",
-                    attributes: {
-                      name,
-                      "auto-apply": true,
-                      "vcs-repo": {
-                        "oauth-token-id": id,
-                        identifier: `${user}/${repo}`,
-                      },
-                    },
-                  },
-                },
-                tfOpts
-              )
-              .then((r) => r.data.data.id)
-          )
-          .then((id) =>
-            Promise.all(
-              [
-                { key: "aws_access_token", env: "AWS_ACCESS_KEY_ID" },
-                { key: "aws_secret_token", env: "AWS_SECRET_ACCESS_KEY" },
-                { key: "developer_token", env: "ROAMJS_DEVELOPER_TOKEN" },
-                { key: "github_token", env: "GITHUB_TOKEN" },
-              ].map(({ key, env }) =>
-                axios.post(
-                  `https://app.terraform.io/api/v2/workspaces/${id}/vars`,
-                  {
-                    data: {
-                      type: "vars",
-                      attributes: {
-                        key,
-                        sensitive: true,
-                        category: "terraform",
-                        value: process.env[env],
-                      },
-                    },
-                  },
-                  tfOpts
-                )
-              )
-            )
-          );
-      },
-      skip: () =>
-        !backend ||
-        !terraformOrganizationToken ||
-        !user ||
-        !process.env.ROAMJS_DEVELOPER_TOKEN ||
-        !process.env.GITHUB_TOKEN ||
-        !process.env.AWS_ACCESS_KEY_ID ||
-        !process.env.AWS_SECRET_ACCESS_KEY,
     },
   ] as { title: string; task: () => Promise<void>; skip?: () => boolean }[];
   for (const task of tasks) {

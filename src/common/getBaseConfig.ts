@@ -181,10 +181,6 @@ const getBaseConfig = (): Promise<
             limit: 100000,
           },
         },
-        {
-          test: /\.ne$/,
-          use: ["nearley-loader"],
-        },
       ],
     },
   });
