@@ -58,7 +58,7 @@ const getBaseConfig = (): Promise<
       "@blueprintjs/datetime": ["Blueprint", "DateTime"],
       "@blueprintjs/select": ["Blueprint", "Select"],
       "chrono-node": "ChronoNode",
-      "crypto": "crypto",
+      crypto: "crypto",
       "crypto-js": "CryptoJS",
       "file-saver": "FileSaver",
       jszip: ["RoamLazy", "JSZip"],
