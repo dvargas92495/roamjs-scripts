@@ -93,7 +93,7 @@ For full documentation, checkout https://roamjs.com/extensions/${extensionName}!
       title: "Write tsconfig.json",
       task: () => {
         const tsconfig = {
-          extends: "./node_modules/roamjs-scripts/dist/default.tsconfig",
+          extends: "./node_modules/roamjs-scripts/default.tsconfig",
           include: ["src"],
           exclude: ["node_modules"],
         };
@@ -134,7 +134,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: install
         run: npm install
       - name: build
