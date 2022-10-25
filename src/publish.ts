@@ -108,7 +108,7 @@ const createGithubRelease = async ({
           execSync(
             `git remote add roam https://github.com/Roam-Research/roam-depot`
           );
-          execSync(`git pull roam main`);
+          execSync(`git pull roam main --rebase`);
           execSync(`git push origin main`);
           if (pr) {
             console.log("Found existing PR");
