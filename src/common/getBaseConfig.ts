@@ -182,6 +182,12 @@ const getBaseConfig = (): Promise<
             limit: 100000,
           },
         },
+        {
+          test: /\.m?js$/,
+          resolve: {
+            fullySpecified: false,
+          },
+        },
       ],
     },
   });
