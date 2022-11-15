@@ -69,9 +69,13 @@ const pushToRoamDepot = async ({
     /^roam(js)?-/,
     ""
   )}.json`;
+  const packageJson = JSON.parse(
+    fs.readFileSync(`${cwd}/package.json`).toString()
+  );
   const { name: authorName, email: authorEmail } = await axios
-    .get(`https://api.github.com/user`, opts())
-    .then((r) => r.data);
+    .get<{ name: string; email: string }>(`https://api.github.com/user`, opts())
+    .then((r) => r.data)
+    .catch(() => packageJson.author || {});
   execSync(`git config --global user.email "${authorEmail}"`);
   execSync(`git config --global user.name "${authorName}"`);
   execSync(`git remote add roam https://github.com/Roam-Research/roam-depot`);
@@ -113,9 +117,6 @@ const pushToRoamDepot = async ({
         )
       );
     } else {
-      const packageJson = JSON.parse(
-        fs.readFileSync(`${cwd}/package.json`).toString()
-      );
       fs.writeFileSync(
         manifestFile,
         JSON.stringify(
