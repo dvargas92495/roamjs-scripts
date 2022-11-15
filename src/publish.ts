@@ -223,7 +223,7 @@ const publish = async ({
   source = "build",
   path: destPathInput = getPackageName(),
   logger: { info, warning } = { info: console.log, warning: console.warn },
-  marketplace,
+  marketplace = false,
   depot = marketplace,
   branch,
   proxy,
@@ -244,7 +244,7 @@ const publish = async ({
   branch?: string;
   proxy?: string;
   labs?: boolean;
-}): Promise<number> => {
+} = {}): Promise<number> => {
   const version = process.env.ROAMJS_VERSION || toVersion(new Date());
   if (labs) {
     return pushToRoamDepot({
