@@ -66,7 +66,7 @@ const pushToRoamDepot = async ({
   );
   process.chdir("roam-depot");
   const manifestFile = `extensions/${proxy}/${repo.replace(
-    /^roamjs-/,
+    /^roam(js)?-/,
     ""
   )}.json`;
   const { name: authorName, email: authorEmail } = await axios
@@ -99,7 +99,7 @@ const pushToRoamDepot = async ({
     if (!fs.existsSync(`extensions/${proxy}`))
       fs.mkdirSync(`extensions/${proxy}`);
     const name = repo
-      .replace(/^roamjs-/, "")
+      .replace(/^roam(js)?-/, "")
       .split("-")
       .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
       .join(" ");
