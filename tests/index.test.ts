@@ -10,6 +10,6 @@ test("Runs Build", async () => {
   //   proc.on("exit", resolve);
   // });
   process.chdir("tests/mock");
-  const exitCode = await build({ labs: true, analyze: true });
+  const exitCode = await build({ labs: true, analyze: true, dry: true });
   expect(exitCode).toBe(0);
 });

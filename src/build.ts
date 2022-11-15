@@ -53,10 +53,12 @@ const build = ({
   depot = marketplace,
   max = "5000000",
   labs = false,
+  dry,
 }: {
   analyze?: boolean;
   max?: string;
   depot?: boolean;
+  dry?: boolean;
   // @deprecated
   marketplace?: boolean;
   labs?: boolean;
@@ -66,6 +68,7 @@ const build = ({
     return labsBuild({
       ...args({ analyze, max }),
       review: "node_modules/roamjs-scripts/publish.js",
+      dry,
     });
   }
   const version = toVersion();
