@@ -9,7 +9,6 @@ import toVersion from "./common/toVersion";
 import dotenv from "dotenv";
 import { execSync } from "child_process";
 import JSZip from "jszip";
-import labPublish from "@samepage/scripts/publish";
 dotenv.config();
 
 type Credentials = {
@@ -34,40 +33,157 @@ const readDir = (s: string): string[] =>
       f.isDirectory() ? readDir(path.join(s, f.name)) : [path.join(s, f.name)]
     );
 
+const opts = () => ({
+  headers: {
+    Accept: "application/vnd.github+json",
+    Authorization: `token ${process.env.GITHUB_TOKEN}`,
+  },
+});
+
+const pushToRoamDepot = async ({
+  repo,
+  owner,
+  tagName,
+  branch = repo,
+  proxy = owner,
+}: {
+  repo: string;
+  owner: string;
+  tagName: string;
+  branch?: string;
+  proxy?: string;
+}) => {
+  console.log("Attempting to publish to Roam Depot...");
+  const pr = await axios
+    .get(
+      `https://api.github.com/repos/Roam-Research/roam-depot/pulls?head=${owner}:${branch}`
+    )
+    .then((r) => r.data[0]?.html_url);
+  const cwd = process.cwd();
+  process.chdir("/tmp");
+  execSync(
+    `git clone https://${owner}:${process.env.GITHUB_TOKEN}@github.com/${owner}/roam-depot.git`
+  );
+  process.chdir("roam-depot");
+  const manifestFile = `extensions/${proxy}/${repo.replace(
+    /^roamjs-/,
+    ""
+  )}.json`;
+  const { name: authorName, email: authorEmail } = await axios
+    .get(`https://api.github.com/user`, opts())
+    .then((r) => r.data);
+  execSync(`git config --global user.email "${authorEmail}"`);
+  execSync(`git config --global user.name "${authorName}"`);
+  execSync(`git remote add roam https://github.com/Roam-Research/roam-depot`);
+  execSync(`git pull roam main --rebase`);
+  execSync(`git push origin main -f`);
+  if (pr) {
+    console.log("Found existing PR");
+    execSync(`git checkout ${branch}`);
+    execSync(`git rebase origin/main`);
+    const manifest = fs.readFileSync(manifestFile).toString();
+    fs.writeFileSync(
+      manifestFile,
+      manifest.replace(
+        /"source_commit": "[a-f0-9]+",/,
+        `"source_commit": "${process.env.GITHUB_SHA}",`
+      )
+    );
+    execSync("git add --all");
+    execSync(`git commit -m "Version ${tagName}"`);
+    execSync(`git push origin ${branch} -f`);
+    console.log(`Updated pull request: ${pr}`);
+  } else {
+    console.log("Creating new PR");
+    execSync(`git checkout -b ${branch}`);
+    if (!fs.existsSync(`extensions/${proxy}`))
+      fs.mkdirSync(`extensions/${proxy}`);
+    const name = repo
+      .replace(/^roamjs-/, "")
+      .split("-")
+      .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
+      .join(" ");
+    if (fs.existsSync(manifestFile)) {
+      const manifest = fs.readFileSync(manifestFile).toString();
+      fs.writeFileSync(
+        manifestFile,
+        manifest.replace(
+          /"source_commit": "[a-f0-9]+",/,
+          `"source_commit": "${process.env.GITHUB_SHA}",`
+        )
+      );
+    } else {
+      const packageJson = JSON.parse(
+        fs.readFileSync(`${cwd}/package.json`).toString()
+      );
+      fs.writeFileSync(
+        manifestFile,
+        JSON.stringify(
+          {
+            name,
+            short_description:
+              packageJson?.description ||
+              "Description missing from package json",
+            author: authorName,
+            tags: packageJson?.tags || [],
+            source_url: `https://github.com/${owner}/${repo}`,
+            source_repo: `https://github.com/${owner}/${repo}.git`,
+            source_commit: process.env.GITHUB_SHA,
+            stripe_account: packageJson.stripe,
+          },
+          null,
+          4
+        ) + "\n"
+      );
+    }
+    const title = `${name}: Version ${tagName}`;
+    execSync("git add --all");
+    execSync(`git commit -m "${title}"`);
+    execSync(`git push origin ${branch} -f`);
+    const url = await axios
+      .post(
+        `https://api.github.com/repos/Roam-Research/roam-depot/pulls`,
+        {
+          head: `${owner}:${branch}`,
+          base: "main",
+          title,
+        },
+        opts()
+      )
+      .then((r) => r.data.html_url)
+      .catch((e) => Promise.reject(e.response.data || e.message));
+    console.log(`Created pull request: ${url}`);
+  }
+  process.chdir(cwd);
+};
+
 const createGithubRelease = async ({
   owner,
   repo,
-  commit,
   tagName,
   depot,
-  stripe,
   branch = repo,
   proxy = owner,
 }: {
   owner: string;
   repo: string;
-  commit?: string;
   tagName: string;
   depot?: boolean;
-  stripe?: string;
   branch?: string;
   proxy?: string;
 }): Promise<void> => {
-  const token = process.env.ROAMJS_RELEASE_TOKEN;
+  const token = process.env.GITHUB_TOKEN;
   if (token) {
     const message = await axios
-      .get(`https://api.github.com/repos/${owner}/${repo}/commits/${commit}`, {
-        headers: {
-          Authorization: `token ${token}`,
-        },
-      })
+      .get(
+        `https://api.github.com/repos/${owner}/${repo}/commits/${process.env.GITHUB_SHA}`,
+        {
+          headers: {
+            Authorization: `token ${token}`,
+          },
+        }
+      )
       .then((r) => r.data.commit.message as string);
-    const opts = {
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `token ${token}`,
-      },
-    };
     return axios
       .post(
         `https://api.github.com/repos/${owner}/${repo}/releases`,
@@ -77,117 +193,20 @@ const createGithubRelease = async ({
             message.length > 50 ? `${message.substring(0, 47)}...` : message,
           body: message.length > 50 ? `...${message.substring(47)}` : "",
         },
-        opts
+        opts()
       )
       .then(async (r) => {
         console.log(
           `Successfully created github release for version ${r.data.tag_name}`
         );
         if (depot) {
-          console.log("Attempting to publish to Roam Depot...");
-          const pr = await axios
-            .get(
-              `https://api.github.com/repos/Roam-Research/roam-depot/pulls?head=${owner}:${branch}`
-            )
-            .then((r) => r.data[0]?.html_url);
-          const cwd = process.cwd();
-          process.chdir("/tmp");
-          execSync(
-            `git clone https://${owner}:${token}@github.com/${owner}/roam-depot.git`
-          );
-          process.chdir("roam-depot");
-          const manifestFile = `extensions/${proxy}/${repo.replace(
-            /^roamjs-/,
-            ""
-          )}.json`;
-          const { name: authorName, email: authorEmail } = await axios
-            .get(`https://api.github.com/user`, opts)
-            .then((r) => r.data);
-          execSync(`git config --global user.email "${authorEmail}"`);
-          execSync(`git config --global user.name "${authorName}"`);
-          execSync(
-            `git remote add roam https://github.com/Roam-Research/roam-depot`
-          );
-          execSync(`git pull roam main --rebase`);
-          execSync(`git push origin main`);
-          if (pr) {
-            console.log("Found existing PR");
-            execSync(`git checkout ${branch}`);
-            execSync(`git rebase origin/main`);
-            const manifest = fs.readFileSync(manifestFile).toString();
-            fs.writeFileSync(
-              manifestFile,
-              manifest.replace(
-                /"source_commit": "[a-f0-9]+",/,
-                `"source_commit": "${commit}",`
-              )
-            );
-            execSync("git add --all");
-            execSync(`git commit -m "Version ${tagName}"`);
-            execSync(`git push origin ${branch} -f`);
-            console.log(`Updated pull request: ${pr}`);
-          } else {
-            console.log("Creating new PR");
-            execSync(`git checkout -b ${branch}`);
-            if (!fs.existsSync(`extensions/${proxy}`))
-              fs.mkdirSync(`extensions/${proxy}`);
-            const name = repo
-              .replace(/^roamjs-/, "")
-              .split("-")
-              .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
-              .join(" ");
-            if (fs.existsSync(manifestFile)) {
-              const manifest = fs.readFileSync(manifestFile).toString();
-              fs.writeFileSync(
-                manifestFile,
-                manifest.replace(
-                  /"source_commit": "[a-f0-9]+",/,
-                  `"source_commit": "${commit}",`
-                )
-              );
-            } else {
-              const packageJson = JSON.parse(
-                fs.readFileSync(`${cwd}/package.json`).toString()
-              );
-              fs.writeFileSync(
-                manifestFile,
-                JSON.stringify(
-                  {
-                    name,
-                    short_description:
-                      packageJson?.description ||
-                      "Description missing from package json",
-                    author: authorName,
-                    tags: packageJson?.tags || [],
-                    source_url: `https://github.com/${owner}/${repo}`,
-                    source_repo: `https://github.com/${owner}/${repo}.git`,
-                    source_commit: commit,
-                    stripe_account: stripe,
-                  },
-                  null,
-                  4
-                ) + "\n"
-              );
-            }
-            const title = `${name}: Version ${tagName}`;
-            execSync("git add --all");
-            execSync(`git commit -m "${title}"`);
-            execSync(`git push origin ${branch} -f`);
-            const url = await axios
-              .post(
-                `https://api.github.com/repos/Roam-Research/roam-depot/pulls`,
-                {
-                  head: `${owner}:${branch}`,
-                  base: "main",
-                  title,
-                },
-                opts
-              )
-              .then((r) => r.data.html_url)
-              .catch((e) => Promise.reject(e.response.data || e.message));
-            console.log(`Created pull request: ${url}`);
-          }
-          process.chdir(cwd);
+          await pushToRoamDepot({
+            owner,
+            branch,
+            repo,
+            tagName,
+            proxy,
+          });
         }
       })
       .catch((e) => console.error(e));
@@ -200,16 +219,15 @@ const createGithubRelease = async ({
 const publish = async ({
   token = process.env.ROAMJS_DEVELOPER_TOKEN,
   email = process.env.ROAMJS_EMAIL,
-  user,
+  user = process.env.GITHUB_REPOSITORY_OWNER,
   source = "build",
   path: destPathInput = getPackageName(),
   logger: { info, warning } = { info: console.log, warning: console.warn },
   marketplace,
   depot = marketplace,
-  commit = process.env.GITHUB_SHA,
   branch,
   proxy,
-  labs = false,
+  labs = !!process.env.LABS,
 }: {
   token?: string;
   email?: string;
@@ -223,16 +241,19 @@ const publish = async ({
   //@deprecated
   marketplace?: boolean;
   depot?: boolean;
-  commit?: string;
   branch?: string;
   proxy?: string;
   labs?: boolean;
 }): Promise<number> => {
-  if (labs)
-    return labPublish({
-      path: destPathInput.replace(/^roamjs-/, "").replace(/\/$/, ""),
-      domain: "roamjs.com/downloads",
-    });
+  const version = process.env.ROAMJS_VERSION || toVersion(new Date());
+  if (labs) {
+    return pushToRoamDepot({
+      repo: path.basename(process.cwd()),
+      owner: user || "",
+      branch,
+      tagName: version,
+    }).then(() => 0);
+  }
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
     : token;
@@ -282,7 +303,6 @@ const publish = async ({
         credentials,
         region: "us-east-1",
       });
-      const version = process.env.ROAMJS_VERSION || toVersion(new Date());
       return Promise.all<unknown[]>(
         fileNames
           .flatMap<unknown>((p) => {
@@ -333,26 +353,14 @@ const publish = async ({
           ])
       )
         .then(() =>
-          axios
-            .get("https://lambda.roamjs.com/user", {
-              headers: {
-                Authorization,
-                "x-roamjs-token": Authorization,
-                "x-roamjs-extension": "developer",
-              },
-            })
-            .then((r) =>
-              createGithubRelease({
-                tagName: version,
-                repo: path.basename(process.cwd()),
-                owner: user || r.data.username || "",
-                commit,
-                depot,
-                stripe: r.data.stripeAccount,
-                branch,
-                proxy,
-              })
-            )
+          createGithubRelease({
+            tagName: version,
+            repo: path.basename(process.cwd()),
+            owner: user || "",
+            depot,
+            branch,
+            proxy,
+          })
         )
         .then(() => 0);
     });

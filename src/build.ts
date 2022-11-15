@@ -62,7 +62,11 @@ const build = ({
   labs?: boolean;
 }): Promise<number> => {
   if (labs) {
-    return labsBuild(args({ analyze, max }));
+    process.env.LABS = "true";
+    return labsBuild({
+      ...args({ analyze, max }),
+      review: "node_modules/roamjs-scripts/publish.js",
+    });
   }
   const version = toVersion();
   const envExisting = fs.existsSync(".env")
