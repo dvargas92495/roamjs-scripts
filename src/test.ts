@@ -3,12 +3,14 @@ import labsTest from "@samepage/scripts/test";
 
 const test = ({
   forward,
+  env = [],
 }: {
   forward?: string | string[];
+  env?: string | string[];
 }): Promise<number> => {
   return labsTest({
     ...args({
-      env: ["ROAM_PASSWORD", "ROAM_USERNAME"],
+      env: ["ROAM_PASSWORD", "ROAM_USERNAME"].concat(env),
     }),
     forward,
     path: "roam",
