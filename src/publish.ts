@@ -99,7 +99,9 @@ const pushToRoamDepot = async ({
       )
     );
     execSync("git add --all", { stdio: "inherit" });
-    execSync(`git commit -m "Version ${packageJson.version}"`);
+    execSync(`git commit -m "Version ${packageJson.version}"`, {
+      stdio: "inherit",
+    });
     execSync(`git push origin ${branch} -f`, { stdio: "inherit" });
     console.log(`Updated pull request: ${pr}`);
   } else {
