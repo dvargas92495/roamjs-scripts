@@ -43,13 +43,11 @@ const opts = () => ({
 const pushToRoamDepot = async ({
   repo,
   owner,
-  tagName,
   branch = repo,
   proxy = owner,
 }: {
   repo: string;
   owner: string;
-  tagName: string;
   branch?: string;
   proxy?: string;
 }) => {
@@ -62,7 +60,8 @@ const pushToRoamDepot = async ({
   const cwd = process.cwd();
   process.chdir("/tmp");
   execSync(
-    `git clone https://${owner}:${process.env.GITHUB_TOKEN}@github.com/${owner}/roam-depot.git`
+    `git clone https://${owner}:${process.env.GITHUB_TOKEN}@github.com/${owner}/roam-depot.git`,
+    { stdio: "inherit" }
   );
   process.chdir("roam-depot");
   const manifestFile = `extensions/${proxy}/${repo.replace(
@@ -76,15 +75,21 @@ const pushToRoamDepot = async ({
     .get<{ name: string; email: string }>(`https://api.github.com/user`, opts())
     .then((r) => r.data)
     .catch(() => packageJson.author || {});
-  execSync(`git config --global user.email "${authorEmail}"`);
-  execSync(`git config --global user.name "${authorName}"`);
-  execSync(`git remote add roam https://github.com/Roam-Research/roam-depot`);
-  execSync(`git pull roam main --rebase`);
-  execSync(`git push origin main -f`);
+  execSync(`git config --global user.email "${authorEmail}"`, {
+    stdio: "inherit",
+  });
+  execSync(`git config --global user.name "${authorName}"`, {
+    stdio: "inherit",
+  });
+  execSync(`git remote add roam https://github.com/Roam-Research/roam-depot`, {
+    stdio: "inherit",
+  });
+  execSync(`git pull roam main --rebase`, { stdio: "inherit" });
+  execSync(`git push origin main -f`, { stdio: "inherit" });
   if (pr) {
     console.log("Found existing PR");
-    execSync(`git checkout ${branch}`);
-    execSync(`git rebase origin/main`);
+    execSync(`git checkout ${branch}`, { stdio: "inherit" });
+    execSync(`git rebase origin/main`, { stdio: "inherit" });
     const manifest = fs.readFileSync(manifestFile).toString();
     fs.writeFileSync(
       manifestFile,
@@ -93,13 +98,13 @@ const pushToRoamDepot = async ({
         `"source_commit": "${process.env.GITHUB_SHA}",`
       )
     );
-    execSync("git add --all");
-    execSync(`git commit -m "Version ${tagName}"`);
-    execSync(`git push origin ${branch} -f`);
+    execSync("git add --all", { stdio: "inherit" });
+    execSync(`git commit -m "Version ${packageJson.version}"`);
+    execSync(`git push origin ${branch} -f`, { stdio: "inherit" });
     console.log(`Updated pull request: ${pr}`);
   } else {
     console.log("Creating new PR");
-    execSync(`git checkout -b ${branch}`);
+    execSync(`git checkout -b ${branch}`, { stdio: "inherit" });
     if (!fs.existsSync(`extensions/${proxy}`))
       fs.mkdirSync(`extensions/${proxy}`);
     const name = repo
@@ -137,10 +142,10 @@ const pushToRoamDepot = async ({
         ) + "\n"
       );
     }
-    const title = `${name}: Version ${tagName}`;
-    execSync("git add --all");
-    execSync(`git commit -m "${title}"`);
-    execSync(`git push origin ${branch} -f`);
+    const title = `${name}: Version ${packageJson.version}`;
+    execSync("git add --all", { stdio: "inherit" });
+    execSync(`git commit -m "${title}"`, { stdio: "inherit" });
+    execSync(`git push origin ${branch} -f`, { stdio: "inherit" });
     const url = await axios
       .post(
         `https://api.github.com/repos/Roam-Research/roam-depot/pulls`,
@@ -205,7 +210,6 @@ const createGithubRelease = async ({
             owner,
             branch,
             repo,
-            tagName,
             proxy,
           });
         }
@@ -246,15 +250,14 @@ const publish = async ({
   proxy?: string;
   labs?: boolean;
 } = {}): Promise<number> => {
-  const version = process.env.ROAMJS_VERSION || toVersion(new Date());
   if (labs) {
     return pushToRoamDepot({
       repo: path.basename(process.cwd()),
       owner: user || "",
       branch,
-      tagName: version,
     }).then(() => 0);
   }
+  const version = process.env.ROAMJS_VERSION || toVersion(new Date());
   const Authorization = email
     ? `Bearer ${Buffer.from(`${email}:${token}`).toString("base64")}`
     : token;
