@@ -98,6 +98,14 @@ const pushToRoamDepot = async ({
         `"source_commit": "${process.env.GITHUB_SHA}",`
       )
     );
+    console.log(
+      "Editing",
+      manifestFile,
+      "from",
+      manifest,
+      "to",
+      process.env.GITHUB_SHA
+    );
     execSync("git add --all", { stdio: "inherit" });
     execSync(`git commit -m "Version ${packageJson.version}"`, {
       stdio: "inherit",
