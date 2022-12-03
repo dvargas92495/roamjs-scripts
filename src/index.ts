@@ -24,14 +24,16 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return build(opts);
     case "dev":
       return dev(opts);
-    case "init":
-      return init(opts);
-    case "lambdas":
-      return lambdas(opts);
-    case "publish":
-      return publish(opts);
     case "test":
       return test(opts);
+
+    // the bottom three commands are @deprecated
+    case "init": // to move to roamjs-backend
+      return init(opts);
+    case "lambdas": // to be removed outright
+      return lambdas(opts);
+    case "publish": // to be redundant with the `build` command
+      return publish(opts);
     default:
       console.error("Command", command, "is unsupported");
       return 1;
