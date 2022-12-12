@@ -232,7 +232,7 @@ const createGithubRelease = async ({
 };
 
 const publish = async ({
-  token = process.env.ROAMJS_DEVELOPER_TOKEN,
+  token = process.env.ROAMJS_DEVELOPER_TOKEN || '',
   email = process.env.ROAMJS_EMAIL,
   user = process.env.GITHUB_REPOSITORY_OWNER,
   source = "build",
