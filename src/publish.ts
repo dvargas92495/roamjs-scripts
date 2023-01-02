@@ -54,7 +54,8 @@ const pushToRoamDepot = async ({
   console.log("Attempting to publish to Roam Depot...");
   const pr = await axios
     .get(
-      `https://api.github.com/repos/Roam-Research/roam-depot/pulls?head=${owner}:${branch}`
+      `https://api.github.com/repos/Roam-Research/roam-depot/pulls?head=${owner}:${branch}`,
+      opts()
     )
     .then((r) => r.data[0]?.html_url);
   const cwd = process.cwd();
