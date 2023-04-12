@@ -1,7 +1,7 @@
 import type { CliArgs } from "@samepage/scripts/internal/compile";
 import getPackageName from "./getPackageName";
 
-const args = ({ env = [], ...params }: CliArgs = {}): CliArgs => {
+const args = (params: CliArgs = {}): CliArgs => {
   process.env.BLUEPRINT_NAMESPACE = "bp3";
   process.env.ROAM_DEPOT = "true";
   process.env.ROAMJS_EXTENSION_ID =
@@ -29,12 +29,6 @@ const args = ({ env = [], ...params }: CliArgs = {}): CliArgs => {
     ],
     include: ["package.json", "README.md"],
     out: "extension",
-    env: [
-      "ROAM_DEPOT",
-      "BLUEPRINT_NAMESPACE",
-      "ROAMJS_EXTENSION_ID",
-      "API_URL",
-    ].concat(env),
     mirror: ".",
     format: "esm",
     ...params,
